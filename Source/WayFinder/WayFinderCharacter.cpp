@@ -161,8 +161,28 @@ bool AWayFinderCharacter::LooseLife(bool should_apply_multiplier)
 
 void AWayFinderCharacter::BeginDie()
 {
-}
+	// Get player controller, disable input
+	APlayerController* controller = Cast<APlayerController>(this->GetController());
+	if (controller)
+	{
+		DisableInput(controller);
+	}
 
+	this->bIsPlayerDead = true; //Set player is dead to true to disable any furthef damage taking
+	//Set death timer
+	GetWorldTimerManager().SetTimer(this->DeathTimerHandle, this, &AWayFinderCharacter::Die, this->DeathTimerTime);
+
+	//Player death montage
+	if (this->DeathMontage)
+	{
+		UAnimInstance* anim_inst = GetMesh()->GetAnimInstance();
+		if (anim_inst)
+		{
+			anim_inst->Montage_Play(this->DeathMontage);
+			//GetWorldTimerManager().SetTimer(this->DeathTimerHandle, this, &ABaseEnemy::Die, this->DeathTimerTime);
+		}
+	}
+}
 
 void AWayFinderCharacter::Die()
 {
@@ -305,22 +325,14 @@ void AWayFinderCharacter::PlayerHasDied()
 
 	if (this->PlayerHealthComponent->GetCurrentHealth() <= 0)
 	{
-		APlayerController* controller = Cast<APlayerController>(this->GetController());
-		if (controller)
+		//If player has lives left, take life and return 
+		if (this->LivesLeft > 0)
 		{
-			DisableInput(controller);
+			this->LooseLife(false);
+			return;
 		}
-		this->bIsPlayerDead = true;
-		GetWorldTimerManager().SetTimer(this->DeathTimerHandle, this, &AWayFinderCharacter::Die, this->DeathTimerTime);
-		if (this->DeathMontage)
-		{
-			UAnimInstance* anim_inst = GetMesh()->GetAnimInstance();
-			if (anim_inst)
-			{
-				anim_inst->Montage_Play(this->DeathMontage);
-				//GetWorldTimerManager().SetTimer(this->DeathTimerHandle, this, &ABaseEnemy::Die, this->DeathTimerTime);
-			}
-		}
+		
+		this->BeginDie();
 	}
 
 }

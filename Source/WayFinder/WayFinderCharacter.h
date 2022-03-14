@@ -116,6 +116,7 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category= "Character Stats", meta = (AllowPrivateAccess = "true"))
 	int32 LivesMax;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character Stats", meta = (AllowPrivateAccess = "true"));
 	int32 LivesLeft;
 
 	/** Camera boom positioning the camera behind the character */
