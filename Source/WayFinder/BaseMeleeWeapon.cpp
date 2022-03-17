@@ -7,6 +7,7 @@
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 #include "Particles/ParticleSystem.h"
@@ -34,14 +35,21 @@ ABaseMeleeWeapon::ABaseMeleeWeapon():
 	this->WeaponCollisionBox->SetupAttachment(this->SkeletalWeaponMeshComponent, FName("Collision_Socket"));
 
 	this->WeaponCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	this->WeaponCollisionBox->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	this->WeaponCollisionBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	this->WeaponCollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 	this->WeaponCollisionBox->SetGenerateOverlapEvents(true);
 	this->WeaponCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ABaseMeleeWeapon::OnWeaponOverlap);
+
+	this->UltAbilityAOE = CreateDefaultSubobject<USphereComponent>(TEXT("WeaponUltimateAbilityAOE"));
+	this->UltAbilityAOE->AttachTo(this->SkeletalWeaponMeshComponent, FName("FX_ult"));
+	this->UltAbilityAOE->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	this->UltAbilityAOE->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	this->UltAbilityAOE->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	this->UltAbilityAOE->SetGenerateOverlapEvents(true);
+	this->UltAbilityAOE->OnComponentBeginOverlap.AddDynamic(this, &ABaseMeleeWeapon::OnUltimateOverlap);
 	
 
-	this->UltimateChargeCurrent = this->UltimateChargeMax;
+	//this->UltimateChargeCurrent = this->UltimateChargeMax;
 
 	//this->bIs
 	this->bReplicates = true;
@@ -85,6 +93,28 @@ void ABaseMeleeWeapon::SetUltimateCharge(float adj_amount)
 		//Add ultimate charge adjustment to current ult, works well for subtracting ult charge too
 		this->UltimateChargeCurrent += adj_amount;
 	}
+}
+
+bool ABaseMeleeWeapon::CanUseUlt()
+{
+	if (this->UltimateChargeCurrent == this->UltimateChargeMax)
+	{
+		return true;
+	}
+	return false;
+}
+
+void ABaseMeleeWeapon::UseUlt()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Called UseUlt for c++ "));
+	this->UltimateChargeCurrent = 0;
+	this->UltAbilityAOE->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+}
+
+void ABaseMeleeWeapon::EndUlt()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Called EndUlt for c++ "));
+	this->UltAbilityAOE->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void ABaseMeleeWeapon::ToggleWeaponCollision(bool bShouldWeaponCollide)
@@ -140,8 +170,35 @@ void ABaseMeleeWeapon::OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent,
 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), this->ImpactParticles, impact_particle_spawn_loc);
 		}
 		//this->OverlapHitReturn = SweepResult;
-		DrawDebugSphere(GetWorld(), SweepResult.Actor->GetActorLocation(), 20, 16, FColor::Red, true, 5.f);
+		//DrawDebugSphere(GetWorld(), SweepResult.Actor->GetActorLocation(), 20, 16, FColor::Red, true, 5.f);
 	}
+}
+
+void ABaseMeleeWeapon::OnUltimateOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	
+
+	//The owner is an enemy
+	ABaseEnemy* enemy_owner = Cast<ABaseEnemy>(this->GetOwner());
+	if (enemy_owner)
+	{
+		AWayFinderCharacter* overlapped_player = Cast<AWayFinderCharacter>(OtherActor);
+		if (!overlapped_player) { return; }
+		overlapped_player->PlayerTakeDamage(this->UltChargeDamage);
+		UE_LOG(LogTemp, Warning, TEXT("player found: %s"), *overlapped_player->GetName());
+	}
+
+	//The owner is an player
+	AWayFinderCharacter* player_owner = Cast<AWayFinderCharacter>(this->GetOwner());
+	if (player_owner)
+	{
+		ABaseEnemy* overlapped_Enemy = Cast<ABaseEnemy>(OtherActor);
+		if (!overlapped_Enemy) { return; }
+
+		overlapped_Enemy->EnemyTakeDamage(this->UltChargeDamage, player_owner);
+		UE_LOG(LogTemp, Warning, TEXT("enemy found: %s"), *overlapped_Enemy->GetName());
+	}
+
 }
 
 void ABaseMeleeWeapon::ToggleWeaponWaitingToApplyDamage(bool bIsWeaponWaitingToApplyDamage)
@@ -196,6 +253,9 @@ void ABaseMeleeWeapon::InitWaveDataTable()
 			this->CriticalDamageAdjustment = rarity_row->DTCriticalDamageAdjustment;
 			this->StartingWeaponDurability = rarity_row->DTStartingWeaponDurability;
 			this->UltimateChargeMax = rarity_row->DTUltimateChargeMax;
+			this->ImpactParticles = rarity_row->DTImpactParticles;
+			this->UltAbilityParticles = rarity_row->DTUltAbilityParticles;
+			this->UltChargeDamage = rarity_row->DTUltChargeDamage;
 			//this->StaticWeaponMeshComponent = rarity_row->DTStaticWeaponMeshComponent;
 			//this->SkeletalWeaponMeshComponent = rarity_row->DTSkeletalWeaponMeshComponent;
 		}

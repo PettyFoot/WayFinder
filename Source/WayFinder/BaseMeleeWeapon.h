@@ -17,6 +17,7 @@
 class UStaticMeshComponent;
 class USkeletalMeshComponent;
 class UBoxComponent;
+class USphereComponent;
 class UParticleSystem;
 class USoundCue;
 
@@ -55,6 +56,15 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float DTUltimateChargeMax;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		float DTUltChargeDamage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UParticleSystem* DTImpactParticles;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UParticleSystem* DTUltAbilityParticles;
 
 
 
@@ -101,17 +111,35 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetUltChargeMax() const { return this->UltimateChargeMax; }
 
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UParticleSystem* GetUltParticles() const { return this->UltAbilityParticles; }
+
 	//Ult charge public setters, will only set ult charge as high as max. (Use negative numbers to reduce ult charge too)
 	UFUNCTION(BlueprintCallable)
 	void SetUltimateCharge(float adj_amount);
+
+	UFUNCTION(BlueprintCallable)
+	bool CanUseUlt();
+
+	UFUNCTION(BlueprintCallable)
+	void UseUlt();
+
+	UFUNCTION(BlueprintCallable)
+	void EndUlt();
 
 	void ToggleWeaponCollision(bool bShouldWeaponCollide);
 
 	UFUNCTION()
 	void OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
+
+	UFUNCTION()
+	void OnUltimateOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
 	//Used to give character using weapon the overlapped actor
 	void ToggleWeaponWaitingToApplyDamage(bool bIsWeaponWaitingToApplyDamage);
+
+
 
 
 private:
@@ -145,6 +173,7 @@ private:
 	AActor* ActorOverlappedOnUse;
 
 	//Used for setting actor hit for player to apply damage (will be reset by player)
+	UPROPERTY(VisibleAnywhere, Category = "Weapon State")
 	bool bIsWaitingToApplyDamage;
 
 	//HitResult to store hit result if target is enemy, could be used for player too
@@ -154,19 +183,33 @@ private:
 	bool bShouldCollide;
 
 	//Bone name of weapon socket to spawn impact particles at, from successful hits
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon FX", meta = (AllowPrivateAccess = "true"))
 		FName BoneNameWeaponImpact;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon FX", meta = (AllowPrivateAccess = "true"))
 		UParticleSystem* ImpactParticles;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon FX", meta = (AllowPrivateAccess = "true"))
+	UParticleSystem* UltAbilityParticles;
 
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Stats")
 	float UltimateChargeMax;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
 	float UltimateChargeCurrent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon FX", meta = (AllowPrivateAccess = "true"))
 	USoundCue* UltimateChargeMaxSoundCue;
+
+	//Radius to apply ult effect within
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon FX", meta = (AllowPrivateAccess = "true"))
+		float UltChargeRadius;
+
+	UPROPERTY(VisibleAnywhere, Category = "Weapon Stats")
+	float UltChargeDamage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
+	USphereComponent* UltAbilityAOE;
 
 
 	/* TODO Add weapon type enum to allow the change of montage sections within the way finder character to enable multiple ability montages per weapon type */

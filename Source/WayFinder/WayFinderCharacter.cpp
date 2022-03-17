@@ -22,8 +22,8 @@
 
 AWayFinderCharacter::AWayFinderCharacter():
 	bIsAbleToFly(false),
-	LivesLeft(0),
 	LivesMax(3),
+	LivesLeft(0),
 	AbilityOneMontage(nullptr),
 	bIsPlayerDead(false),
 	DeathTimerTime(5.f),
@@ -80,6 +80,7 @@ void AWayFinderCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAction("AbilityOne", IE_Pressed, this, &AWayFinderCharacter::PressedAbilityOne);
 	PlayerInputComponent->BindAction("AbilityTwo", IE_Pressed, this, &AWayFinderCharacter::PressedAbilityTwo);
 	PlayerInputComponent->BindAction("AbilityThree", IE_Pressed, this, &AWayFinderCharacter::PressedAbilityThree);
+	PlayerInputComponent->BindAction("UltimateAbility", IE_Pressed, this, &AWayFinderCharacter::ActivateUltimateAbility);
 	
 	//Move forward, sideways, & vertically axis binding
 	PlayerInputComponent->BindAxis("MoveForward", this, &AWayFinderCharacter::MoveForward);
@@ -143,6 +144,16 @@ void AWayFinderCharacter::PressedAbilityTwo()
 void AWayFinderCharacter::PressedAbilityThree()
 {
 	UE_LOG(LogTemp, Warning, TEXT("PressedAbilityThree"));
+}
+
+void AWayFinderCharacter::ActivateUltimateAbility()
+{
+	if (this->PlayerEquippedMeleeWeapon) { return; }
+
+	if (this->PlayerEquippedMeleeWeapon->CanUseUlt())
+	{
+		this->PlayerEquippedMeleeWeapon->UseUlt();
+	}
 }
 
 bool AWayFinderCharacter::LooseLife(bool should_apply_multiplier)

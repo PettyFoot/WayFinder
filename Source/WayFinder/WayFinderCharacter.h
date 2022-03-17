@@ -117,6 +117,10 @@ protected:
 	void PressedAbilityTwo();
 	void PressedAbilityThree();
 
+	//Will check if weapon ult charge is high enough to use ult
+	UFUNCTION(BlueprintCallable)
+	void ActivateUltimateAbility();
+
 private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
