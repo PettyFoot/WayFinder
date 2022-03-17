@@ -144,6 +144,7 @@ void ABaseEnemy::EnemyTakeDamage(float DamageAmount, AActor* damage_causer)
 		this->AttackingPlayer = Cast<AWayFinderCharacter>(damage_causer);
 		if (this->AttackingPlayer)
 		{
+			this->ShowHealthBar();
 			UE_LOG(LogTemp, Warning, TEXT("Attempting To play hit react"));
 			this->PlayHitReact();
 		}
@@ -241,6 +242,12 @@ void ABaseEnemy::EnableBossParticles()
 		
 		//GetMesh()->GetSocketByName(FName("FX_Shoulder_l"))
 	}
+}
+
+void ABaseEnemy::ShowHealthBar_Implementation()
+{
+	GetWorldTimerManager().ClearTimer(this->ShowHealthBarHandle);
+	GetWorldTimerManager().SetTimer(this->ShowHealthBarHandle, this, &ABaseEnemy::HideHealthBar, this->ShowHealthBarTimerTime);
 }
 
 void ABaseEnemy::Die()

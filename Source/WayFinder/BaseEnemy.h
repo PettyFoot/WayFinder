@@ -64,6 +64,12 @@ public:
 
 	void EnableBossParticles();
 
+	UFUNCTION(BlueprintNativeEvent)
+	void ShowHealthBar();
+	void ShowHealthBar_Implementation();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void HideHealthBar();
 	
 
 protected:
@@ -175,6 +181,13 @@ private:
 	//Attacker's relative position to enemy (0->90, 0->-270)
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
 	float AttackerPositionAround;
+
+	//Health bar timer handle 
+	FTimerHandle ShowHealthBarHandle;
+
+	//Time before health bar is hidden 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
+	float ShowHealthBarTimerTime;
 
 
 private:
