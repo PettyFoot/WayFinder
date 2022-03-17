@@ -261,8 +261,6 @@ void AWayFinderCharacter::BeginPlay()
 
 }
 
-
-
 void AWayFinderCharacter::EnableWeaponCollision()
 {
 	if (this->PlayerEquippedMeleeWeapon)
@@ -313,10 +311,33 @@ void AWayFinderCharacter::DoDamage(ABaseEnemy* enemy_target)
 
 void AWayFinderCharacter::PlayerTakeDamage(float dmg_amount)
 {
+	if (HasAuthority())
+	{
+		if (this->PlayerHealthComponent)
+		{
+			this->PlayerHealthComponent->HealthTakeDamage(dmg_amount);
+		}
+
+	}
+	else
+	{
+		this->ServerPlayerTakeDamage(dmg_amount);
+	}
+	
+}
+
+void AWayFinderCharacter::ServerPlayerTakeDamage_Implementation(float dmg_amount)
+{
 	if (this->PlayerHealthComponent)
 	{
 		this->PlayerHealthComponent->HealthTakeDamage(dmg_amount);
 	}
+}
+
+
+bool AWayFinderCharacter::ServerPlayerTakeDamage_Validate(float dmg_amount)
+{
+	return true;
 }
 
 void AWayFinderCharacter::PlayerHasDied()

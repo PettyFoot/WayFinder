@@ -10,6 +10,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 #include "Particles/ParticleSystem.h"
+#include "Sound/SoundCue.h"
 #include "WayFinderCharacter.h"
 
 
@@ -17,7 +18,8 @@
 ABaseMeleeWeapon::ABaseMeleeWeapon():
 	WeaponLevel(EWeaponLevel::WL_DefaultWeapon),
 	bIsWaitingToApplyDamage(false),
-	bShouldCollide(false)
+	bShouldCollide(false),
+	UltimateChargeCurrent(0)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -26,9 +28,6 @@ ABaseMeleeWeapon::ABaseMeleeWeapon():
 	this->SkeletalWeaponMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalWeaponMeshComponent"));
 	SetRootComponent(this->SkeletalWeaponMeshComponent);
 
-	//Create static weapon mesh component and attach to skeletal weapon mesh component
-	//this->StaticWeaponMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticWeaponMeshComponent"));
-	//this->StaticWeaponMeshComponent->SetupAttachment(this->SkeletalWeaponMeshComponent);
 
 	//Create weapon collision box and attach to Skeletal weapon mesh component 
 	this->WeaponCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("WeaponCollisionBox"));
@@ -41,6 +40,9 @@ ABaseMeleeWeapon::ABaseMeleeWeapon():
 	this->WeaponCollisionBox->SetGenerateOverlapEvents(true);
 	this->WeaponCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ABaseMeleeWeapon::OnWeaponOverlap);
 	
+
+	this->UltimateChargeCurrent = this->UltimateChargeMax;
+
 	//this->bIs
 	this->bReplicates = true;
 
@@ -66,6 +68,23 @@ void ABaseMeleeWeapon::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void ABaseMeleeWeapon::SetUltimateCharge(float adj_amount)
+{
+	if (this->UltimateChargeCurrent + adj_amount >= this->UltimateChargeMax)
+	{
+		this->UltimateChargeCurrent = this->UltimateChargeMax;
+		UE_LOG(LogTemp, Warning, TEXT("You have reached max ult charge"));
+		//Play sound cue
+
+	}
+
+	else
+	{
+		//Add ultimate charge adjustment to current ult, works well for subtracting ult charge too
+		this->UltimateChargeCurrent += adj_amount;
+	}
 }
 
 void ABaseMeleeWeapon::ToggleWeaponCollision(bool bShouldWeaponCollide)
@@ -176,6 +195,7 @@ void ABaseMeleeWeapon::InitWaveDataTable()
 			this->BaseWeaponDamage = rarity_row->DTBaseWeaponDamage;
 			this->CriticalDamageAdjustment = rarity_row->DTCriticalDamageAdjustment;
 			this->StartingWeaponDurability = rarity_row->DTStartingWeaponDurability;
+			this->UltimateChargeMax = rarity_row->DTUltimateChargeMax;
 			//this->StaticWeaponMeshComponent = rarity_row->DTStaticWeaponMeshComponent;
 			//this->SkeletalWeaponMeshComponent = rarity_row->DTSkeletalWeaponMeshComponent;
 		}

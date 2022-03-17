@@ -9,9 +9,12 @@
 
 
 
-/**
- * 
- */
+//TODO
+//Improve enemy ai
+//Add strafing
+//Add dodging attacks
+//Add diversity in attacks/abilities
+//Create subclass for boss to add boss scripting
 
 
 class UWayFinderHealthComponent;
@@ -21,6 +24,7 @@ class UAnimMontage;
 class UBoxComponent;
 class UParticleSystem;
 class UParticleSystemComponent;
+
 
 UCLASS()
 class WAYFINDER_API ABaseEnemy : public ACharacter

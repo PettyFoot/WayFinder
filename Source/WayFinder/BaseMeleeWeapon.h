@@ -9,11 +9,16 @@
 #include "Engine/DataTable.h"
 #include "BaseMeleeWeapon.generated.h"
 
+//TODO
+//Add hit sound for when sword hits flesh (maybe physical materials)
+//Add abilities for weapons to use
+//add sounds for having full ult charge
 
 class UStaticMeshComponent;
 class USkeletalMeshComponent;
 class UBoxComponent;
 class UParticleSystem;
+class USoundCue;
 
 UENUM(BlueprintType)
 enum class EWeaponLevel : uint8
@@ -47,6 +52,13 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		USkeletalMeshComponent* DTSkeletalWeaponMeshComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float DTUltimateChargeMax;
+
+
+
+
 
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	//	UStaticMeshComponent* DTStaticWeaponMeshComponent;
@@ -83,11 +95,22 @@ public:
 	FORCEINLINE float GetBaseWeaponDamage() const { return this->BaseWeaponDamage; }
 	FORCEINLINE AActor* GetActorOverlappedOnUse() { return this->ActorOverlappedOnUse; }
 
+	//Ult charge public getters
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetUltCurrentCharge() const { return this->UltimateChargeCurrent; }
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetUltChargeMax() const { return this->UltimateChargeMax; }
+
+	//Ult charge public setters, will only set ult charge as high as max. (Use negative numbers to reduce ult charge too)
+	UFUNCTION(BlueprintCallable)
+	void SetUltimateCharge(float adj_amount);
+
 	void ToggleWeaponCollision(bool bShouldWeaponCollide);
 
 	UFUNCTION()
 	void OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
+	//Used to give character using weapon the overlapped actor
 	void ToggleWeaponWaitingToApplyDamage(bool bIsWeaponWaitingToApplyDamage);
 
 
@@ -136,6 +159,14 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
 		UParticleSystem* ImpactParticles;
+
+	UPROPERTY(VisibleAnywhere, Category = "Weapon Stats")
+	float UltimateChargeMax;
+
+	float UltimateChargeCurrent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
+	USoundCue* UltimateChargeMaxSoundCue;
 
 
 	/* TODO Add weapon type enum to allow the change of montage sections within the way finder character to enable multiple ability montages per weapon type */

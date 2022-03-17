@@ -15,6 +15,11 @@ class UWayFinderHealthComponent;
 class UAnimMontage;
 class ABaseEnemy;
 
+//TODO
+//Add enum to track character state
+//Add abilities to use ult charge for
+//Add footstep sounds to jump and land anims
+//Add a reset of health after life lost
 
 
 UCLASS(config=Game)
@@ -36,7 +41,8 @@ public:
 
 	FORCEINLINE bool GetIsPlayerDead() const { return this->bIsPlayerDead; }
 
-	//TODO
+	FORCEINLINE ABaseMeleeWeapon* GetPlayerEquippedWeapon() const { return this->PlayerEquippedMeleeWeapon; }
+
 	bool LooseLife(bool should_apply_multiplier);
 
 	void BeginDie();
@@ -63,6 +69,9 @@ public:
 	void ServerDoDamage(ABaseEnemy* enemy_target = nullptr);
 
 	void PlayerTakeDamage(float dmg_amount);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerPlayerTakeDamage(float dmg_amount);
 
 	void PlayerHasDied();
 
