@@ -37,10 +37,13 @@ public:
 public:
 
 	FORCEINLINE UBehaviorTree* GetBehaviorTree() const { return this->EnemyBehaviorTree; }
-	FORCEINLINE UWayFinderHealthComponent* GetEnemyHealthComponent() { return this->EnemyHealthComponent; }
 	FORCEINLINE bool GetEnemyInvulnerability() const { return this->bIsInvulvernable; }
 	FORCEINLINE bool GetIsEnemyDead() const { return this->bIsEnemyDead; }
 	FORCEINLINE bool GetIsEventTriggered() const { return this->bEventTriggered; }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UWayFinderHealthComponent* GetEnemyHealthComponent() { return this->EnemyHealthComponent; }
+
 	//Damage enemy by amount, death is handled through the gamemode for game mode logic and for eaasy replication (DONT CHANGE THIS METHOD UNTIL FOUND A BETTER METHOD)
 	void EnemyTakeDamage(float DamageAmount, AActor* damage_causer);
 

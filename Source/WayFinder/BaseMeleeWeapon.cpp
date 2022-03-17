@@ -115,10 +115,10 @@ void ABaseMeleeWeapon::OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent,
 		//UE_LOG(LogTemp, Warning, TEXT)
 		this->bIsWaitingToApplyDamage = true;
 		this->ActorOverlappedOnUse = overlapped_actor;
-
+		FVector impact_particle_spawn_loc = this->SkeletalWeaponMeshComponent->GetSocketLocation(FName("weapon_spawn_impact_r"));
 		if (this->ImpactParticles)
 		{
-			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), this->ImpactParticles, GetActorTransform());
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), this->ImpactParticles, impact_particle_spawn_loc);
 		}
 		//this->OverlapHitReturn = SweepResult;
 		DrawDebugSphere(GetWorld(), SweepResult.Actor->GetActorLocation(), 20, 16, FColor::Red, true, 5.f);
