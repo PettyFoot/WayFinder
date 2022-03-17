@@ -70,6 +70,10 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
+	//Used to get the current wave state to print to gui
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE EWaveState GetCurrentWaveState() const { return this->WaveState; }
+
 	
 
 protected:
@@ -98,7 +102,7 @@ protected:
 
 	bool CheckBossAlive();
 
-	void FindBoss(ABaseEnemy* boss);
+	void FindBoss();
 
 	void InitWaveDataTable();
 

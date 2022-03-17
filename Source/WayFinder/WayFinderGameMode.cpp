@@ -35,19 +35,11 @@ AWayFinderGameMode::AWayFinderGameMode() :
 void AWayFinderGameMode::StartPlay()
 {
 	Super::StartPlay();
+			
+	//Tries to find an appropriate boss to set for level, in order to enable spawn events
+	this->FindBoss();
+	UE_LOG(LogTemp, Error, TEXT("Boss Set to: %s"), *this->BossEnemy->GetName());
 	
-	TArray<AActor*> Enemies;
-	UGameplayStatics::GetAllActorsOfClass(this, ABaseEnemy::StaticClass(), Enemies);
-	for (AActor* enemy : Enemies)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Enemy found is: %s"), *enemy->GetName());
-		ABaseEnemy* enemy_ai = Cast<ABaseEnemy>(enemy);
-		if (enemy_ai)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Boss Set to: %s"), *enemy_ai->GetName());
-			this->FindBoss(enemy_ai);
-		}
-	}
 
 }
 
@@ -139,9 +131,6 @@ void AWayFinderGameMode::UpdateBotSpawner()
 
 void AWayFinderGameMode::CheckWaveState()
 {
-
-	
-
 	if (!this->CheckAnyEnemyAlive())
 	{
 		this->WaveState = EWaveState::WS_WaveOver;
@@ -184,7 +173,7 @@ void AWayFinderGameMode::StartWave()
 //Stops bot spawning
 void AWayFinderGameMode::EndWave() 
 {
-	UE_LOG(LogTemp, Warning, TEXT("Called EdnWave"));
+	UE_LOG(LogTemp, Warning, TEXT("Called EndWave"));
 	this->WaveState = EWaveState::WS_WaveOver;
 	this->PrepareForNextWave();
 	GetWorldTimerManager().ClearTimer(this->BotTimerHandle);
@@ -257,16 +246,31 @@ bool AWayFinderGameMode::CheckBossAlive()
 	return false;
 }
 
-void AWayFinderGameMode::FindBoss(ABaseEnemy* boss)
+void AWayFinderGameMode::FindBoss()
 {
-	if (!boss) { return; }
-	//This is the boss
-	this->BossEnemy = boss;
-	this->BossEnemy->ToggleEnemyInvulnverability(true); //Make boss invulnerable
-	//Run boss behavior tree TODO
-	//Init wave data from wavestats data table
-	this->InitWaveDataTable();
-	this->WaveState = EWaveState::WS_Started;
+
+	TArray<AActor*> Enemies;
+	UGameplayStatics::GetAllActorsOfClass(this, ABaseEnemy::StaticClass(), Enemies);
+	for (AActor* enemy : Enemies)
+	{
+
+		UE_LOG(LogTemp, Error, TEXT("Enemy found is: %s"), *enemy->GetName());
+		//Make a specific bossenemy subclass so that i can easily make boss scripting (via boss state and behavior based of enemy state)
+		ABaseEnemy* enemy_ai = Cast<ABaseEnemy>(enemy);
+		if (enemy_ai)
+		{
+			//This is the boss
+			this->BossEnemy = enemy_ai;
+			this->BossEnemy->ToggleEnemyInvulnverability(true); //Make boss invulnerable
+			//Init wave data from wavestats data table
+			this->InitWaveDataTable();
+			this->WaveState = EWaveState::WS_Started;
+		}
+
+		//If boss is set to valid enemy then end loop
+		if (this->BossEnemy) { break; }
+	}
+	
 }
 
 void AWayFinderGameMode::LastWaveReached()
