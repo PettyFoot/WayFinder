@@ -38,13 +38,8 @@ ABaseEnemy::ABaseEnemy():
 	this->bReplicates = true;
 }
 
-void ABaseEnemy::BeginPlay()
-{ 
-	Super::BeginPlay();
-
-	this->EnemyController = Cast<ABaseEnemyControllerAI>(GetController());
-	
-
+void ABaseEnemy::StartBehaviorTree()
+{
 	if (this->EnemyController)
 	{
 		//Convert local PatrolPoint to global vector location 
@@ -61,7 +56,7 @@ void ABaseEnemy::BeginPlay()
 			world_patrol_pointfive = UKismetMathLibrary::TransformLocation(GetActorTransform(), this->PatrolPointFive);
 			world_patrol_pointsix = UKismetMathLibrary::TransformLocation(GetActorTransform(), this->PatrolPointSix);
 		}
-		
+
 		//Assign targetlocation with global patrol point
 		this->EnemyController->GetBlackboardComponent()->SetValueAsVector(TEXT("PatrolPointOne"), world_patrol_point);
 		this->EnemyController->GetBlackboardComponent()->SetValueAsVector(TEXT("PatrolPointTwo"), world_patrol_pointtwo);
@@ -70,14 +65,23 @@ void ABaseEnemy::BeginPlay()
 		this->EnemyController->GetBlackboardComponent()->SetValueAsVector(TEXT("PatrolPointFive"), world_patrol_pointfive);
 		this->EnemyController->GetBlackboardComponent()->SetValueAsVector(TEXT("PatrolPointSix"), world_patrol_pointsix);
 		this->EnemyController->GetBlackboardComponent()->SetValueAsVector(TEXT("StartLocation"), GetActorLocation());
-		
+
 
 		this->EnemyController->RunBehaviorTree(this->EnemyBehaviorTree);
 	}
+}
+
+void ABaseEnemy::BeginPlay()
+{ 
+	Super::BeginPlay();
+
+	this->EnemyController = Cast<ABaseEnemyControllerAI>(GetController());
 
 	//Subscribe OverlappedEventCollisionBox to eventcollisionbox's overlap events
 	this->EventEnableCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ABaseEnemy::OverlappedEventCollisionBox);
 	this->EventEnableCollisionBox->OnComponentEndOverlap.AddDynamic(this, &ABaseEnemy::EndOverlapEventCollisionsBox);
+
+	//this->StartBehaviorTree();
 
 	this->SpawnDefaultMeleeWeapon();
 
@@ -108,8 +112,6 @@ void ABaseEnemy::EndOverlapEventCollisionsBox(UPrimitiveComponent* OverlappedCom
 	}
 }
 
-
-
 void ABaseEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -136,7 +138,11 @@ void ABaseEnemy::Tick(float DeltaTime)
 
 void ABaseEnemy::EnemyTakeDamage(float DamageAmount, AActor* damage_causer)
 {
+	//enemy is invulnerable return and don't apply damage
+	if (this->bIsInvulvernable) { return; }
+
 	this->EnemyHealthComponent->HealthTakeDamage(DamageAmount);
+
 	if (damage_causer)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Damage Causer: %s"), *damage_causer->GetName());
@@ -178,6 +184,11 @@ void ABaseEnemy::EnemyHasDied()
 void ABaseEnemy::ToggleEnemyInvulnverability(bool bShouldEnemyBeInvulnerable)
 {
 	this->bIsInvulvernable = bShouldEnemyBeInvulnerable;
+}
+
+float ABaseEnemy::GetEnemyWeaponDamageAdjustments()
+{
+	return 0.0f;
 }
 
 void ABaseEnemy::EnemyAttack()
@@ -249,6 +260,9 @@ void ABaseEnemy::ShowHealthBar_Implementation()
 	GetWorldTimerManager().ClearTimer(this->ShowHealthBarHandle);
 	GetWorldTimerManager().SetTimer(this->ShowHealthBarHandle, this, &ABaseEnemy::HideHealthBar, this->ShowHealthBarTimerTime);
 }
+
+
+
 
 void ABaseEnemy::Die()
 {

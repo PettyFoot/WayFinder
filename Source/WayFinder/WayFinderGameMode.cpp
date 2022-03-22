@@ -183,6 +183,7 @@ void AWayFinderGameMode::EndWave()
 void AWayFinderGameMode::PrepareForNextWave() 
 {
 	UE_LOG(LogTemp, Warning, TEXT("Called PrepareForNextWave"));
+	this->NumBotsAlive = 0;
 	if (this->WaveCountCurrent == this->WaveCountTarget)
 	{
 		//All Waves have been cleared, enable boss
@@ -190,7 +191,6 @@ void AWayFinderGameMode::PrepareForNextWave()
 		return;
 	}
 	
-	this->NumBotsAlive = 0;
 	GetWorldTimerManager().SetTimer(this->UntilNextWaveHandle, this, &AWayFinderGameMode::StartWave, this->UntilNextWaveTimerTime, false);
 	this->WaveState = EWaveState::WS_BetweenWaves;
 }
@@ -219,8 +219,15 @@ bool AWayFinderGameMode::CheckAnyEnemyAlive()
 {
 
 	//Loop through all actors of type ABaseenemy
+	int32 numbotsalive = 0;
 	TArray<AActor*> EnemiesInGame;
 	UGameplayStatics::GetAllActorsOfClass(this, ABaseEnemy::StaticClass(), EnemiesInGame);
+
+	numbotsalive = EnemiesInGame.Num() - 1;
+	if (numbotsalive < this->NumBotsAlive)
+	{
+		this->NumBotsAlive = numbotsalive;
+	}
 	for (AActor* enemy : EnemiesInGame)
 	{
 		ABaseEnemy* enemy_ai = Cast<ABaseEnemy>(enemy);
@@ -241,6 +248,10 @@ bool AWayFinderGameMode::CheckBossAlive()
 {
 	if (this->BossEnemy)
 	{
+		if (this->BossEnemy->GetEnemyHealthComponent()->GetCurrentHealth() <= 0)
+		{
+			return false;
+		}
 		return true;
 	}
 	return false;
@@ -259,16 +270,24 @@ void AWayFinderGameMode::FindBoss()
 		ABaseEnemy* enemy_ai = Cast<ABaseEnemy>(enemy);
 		if (enemy_ai)
 		{
-			//This is the boss
-			this->BossEnemy = enemy_ai;
-			this->BossEnemy->ToggleEnemyInvulnverability(true); //Make boss invulnerable
-			//Init wave data from wavestats data table
-			this->InitWaveDataTable();
-			this->WaveState = EWaveState::WS_Started;
+			//If boss is set to valid enemy then end loop
+			if (this->BossEnemy) 
+			{
+				enemy_ai->StartBehaviorTree();
+			}
+			else
+			{
+				//This is the boss
+				this->BossEnemy = enemy_ai;
+				this->BossEnemy->ToggleEnemyInvulnverability(true); //Make boss invulnerable
+				//Init wave data from wavestats data table
+				this->InitWaveDataTable();
+				this->WaveState = EWaveState::WS_Started;
+			}
+			
 		}
 
-		//If boss is set to valid enemy then end loop
-		if (this->BossEnemy) { break; }
+		
 	}
 	
 }
@@ -288,7 +307,7 @@ void AWayFinderGameMode::BeginFinalWave()
 {
 	UE_LOG(LogTemp, Warning, TEXT("You have reached the final wave!"));
 	this->BossEnemy->ToggleEnemyInvulnverability(false);
-	this->BossEnemy->SetActorScale3D(FVector(3.f, 3.f, 3.f));
+	this->BossEnemy->SetActorScale3D(FVector(2.f, 2.f, 2.f));
 	this->BossEnemy->EnableBossParticles();
 	
 }

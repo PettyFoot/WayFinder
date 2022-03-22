@@ -2,7 +2,10 @@
 
 #pragma once
 
+
 #include "CoreMinimal.h"
+#include "Containers/Array.h"
+#include "Containers/Map.h"
 #include "GameFramework/Character.h"
 #include "Animation/AnimMontage.h"
 #include "WayFinderCharacter.generated.h"
@@ -14,12 +17,24 @@ class ABaseMeleeWeapon;
 class UWayFinderHealthComponent;
 class UAnimMontage;
 class ABaseEnemy;
+class AItem;
 
 //TODO
 //Add enum to track character state
 //Add abilities to use ult charge for
 //Add footstep sounds to jump and land anims
 //Add a reset of health after life lost
+
+UENUM(BlueprintType)
+enum class EPlayerState : uint8
+{
+	PS_Idle, 
+	PS_Travel,
+	PS_Combat,
+	PS_Attacking,
+	PS_Dead,
+	PS_Buffed
+};
 
 
 UCLASS(config=Game)
@@ -30,6 +45,8 @@ class AWayFinderCharacter : public ACharacter
 public:
 
 	AWayFinderCharacter();
+
+	virtual void Tick(float DeltaTime) override;
 
 public:
 	/** Returns CameraBoom subobject **/
@@ -43,19 +60,27 @@ public:
 
 	FORCEINLINE ABaseMeleeWeapon* GetPlayerEquippedWeapon() const { return this->PlayerEquippedMeleeWeapon; }
 
-	bool LooseLife(bool should_apply_multiplier);
-
-	void BeginDie();
 
 public:
 
-	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
-	float BaseTurnRate;
+	//
+	bool LooseLife(bool should_apply_multiplier);
 
-	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
-	float BaseLookUpRate;
+	//Called from health component to start internal death stuff
+	void PlayerHasDied();
+
+	//This is called from equipped weapon to enable any buffs, debuffs, consumable effect, etc. adjustment to wepaon damage when it is attacking and overlapping
+	//an a valid enemy target
+	//--returns a float value adjustment for weapon damage
+	float GetPlayerWeaponWeaponAdjustments();
+
+	//Axis input to zoom (set to mouse scroll wheel)
+	void ZoomEnabled(float value);
+
+	void AdjustOverlappedItems(int32 amount_to_adjust);
+
+
+public:
 
 	UFUNCTION(BlueprintCallable)
 	void EnableWeaponCollision();
@@ -73,11 +98,23 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerPlayerTakeDamage(float dmg_amount);
 
-	void PlayerHasDied();
+	UFUNCTION(BlueprintCallable)
+	void ToggleInvuln(bool bShouldBInvuln) { this->bIsInvuln = bShouldBInvuln; }
 
-	void ZoomEnabled(float value);
 
 
+public:
+
+	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+		float BaseTurnRate;
+
+	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+		float BaseLookUpRate;
+
+	//Check if player is invuln (nothing uses this currently)
+	bool bIsInvuln;
 
 protected:
 
@@ -121,6 +158,8 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void ActivateUltimateAbility();
 
+	void PickUpItem();
+
 private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
@@ -158,9 +197,6 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
 		UAnimMontage* DeathMontage;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player State", meta = (AllowPrivateAccess = "true"))
-	bool bIsPlayerDead;
-
 	FTimerHandle DeathTimerHandle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
@@ -175,14 +211,56 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	float MaxZoomIn;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player State", meta = (AllowPrivateAccess = "true"))
+	EPlayerState WFPlayerState;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player State", meta = (AllowPrivateAccess = "true"))
+	bool bIsPlayerDead;
+
+	//Timer handle used to get player out of combat state after certain time not attacking (enemy combat state should not run in parallel)
+	FTimerHandle PlayerCombatStateTimer;
+
+	//Time before leaving combat state after not engaging enemy
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State", meta = (AllowPrivateAccess = "true"))
+	float PlayerCombatStateTimerTime;
+
+	//Inventory
+	//Array of maps that hold (item, item amount)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Inventory", meta = (AllowPrivateAccess = "true"))
+	TMap<AItem*, uint8> Inventory;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Inventory", meta = (AllowPrivateAccess = "true"))
+	bool bShouldTraceForItems;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Inventory", meta = (AllowPrivateAccess = "true"))
+	int32 NumItemsOverlapping;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Inventory", meta = (AllowPrivateAccess = "true"))
+	AItem* TraceHitItem;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Inventory", meta = (AllowPrivateAccess = "true"))
+	AItem* TraceHitLastFrame;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Inventory", meta = (AllowPrivateAccess = "true"))
+	uint8 InventoryCapacity;
+
+	
 	
 
 private:
 
+	//Line trace for items if overlapping actors
+	void TraceForItems();
+
+	bool TraceUnderCrosshairs(FHitResult& out_hit_result, FVector& out_hit_location);
+
+	void SpawnDefaultMeleeWeapon();
+
 	UFUNCTION(BlueprintCallable)
 	void Die();
 
-	void SpawnDefaultMeleeWeapon();
+	
 
 	/* Ability bar private function calls */
 
@@ -191,6 +269,10 @@ private:
 	void ActivateAbilityOne();
 	void ActivateAbilityTwo();
 	void ActivateAbilityThree();
+
+	void LeaveCombatState();
+
+	void BeginDie();
 
 
 };

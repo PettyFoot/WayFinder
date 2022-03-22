@@ -13,6 +13,7 @@
 #include "Particles/ParticleSystem.h"
 #include "Sound/SoundCue.h"
 #include "WayFinderCharacter.h"
+#include "WayFinderHealthComponent.h"
 
 
 // Sets default values
@@ -25,14 +26,11 @@ ABaseMeleeWeapon::ABaseMeleeWeapon():
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	//Create skeletal weapon mesh component 
-	this->SkeletalWeaponMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalWeaponMeshComponent"));
-	SetRootComponent(this->SkeletalWeaponMeshComponent);
 
 
 	//Create weapon collision box and attach to Skeletal weapon mesh component 
 	this->WeaponCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("WeaponCollisionBox"));
-	this->WeaponCollisionBox->SetupAttachment(this->SkeletalWeaponMeshComponent, FName("Collision_Socket"));
+	this->WeaponCollisionBox->SetupAttachment(GetRootComponent());
 
 	this->WeaponCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	this->WeaponCollisionBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
@@ -41,7 +39,7 @@ ABaseMeleeWeapon::ABaseMeleeWeapon():
 	this->WeaponCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ABaseMeleeWeapon::OnWeaponOverlap);
 
 	this->UltAbilityAOE = CreateDefaultSubobject<USphereComponent>(TEXT("WeaponUltimateAbilityAOE"));
-	this->UltAbilityAOE->AttachTo(this->SkeletalWeaponMeshComponent, FName("FX_ult"));
+	this->UltAbilityAOE->AttachTo(this->ItemMeshComponent, FName("FX_ult"));
 	this->UltAbilityAOE->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	this->UltAbilityAOE->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	this->UltAbilityAOE->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
@@ -54,6 +52,7 @@ ABaseMeleeWeapon::ABaseMeleeWeapon():
 	//this->bIs
 	this->bReplicates = true;
 
+	
 }
 
 
@@ -61,14 +60,13 @@ void ABaseMeleeWeapon::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 
-	this->InitWaveDataTable();
 }
 
 // Called when the game starts or when spawned
 void ABaseMeleeWeapon::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	this->InitWaveDataTable();
 }
 
 // Called every frame
@@ -140,38 +138,74 @@ void ABaseMeleeWeapon::OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent,
 {
 	if (!this->bShouldCollide) { return; }
 
-	AActor* overlapped_actor = nullptr;
-	overlapped_actor = Cast<ABaseEnemy>(OtherActor);
-	if (!overlapped_actor) 
+	//See if weapon owner is a player character
+	AWayFinderCharacter* player_weapon_owner = Cast<AWayFinderCharacter>(GetOwner());
+	if (player_weapon_owner)
 	{
-		
-		overlapped_actor = Cast<AWayFinderCharacter>(OtherActor);
-		if (!overlapped_actor) { return; }
+		AWayFinderCharacter* player_hit = Cast<AWayFinderCharacter>(OtherActor);
+		//this is an enemy attacking another enemy, don't allow return
+		if (player_hit) { return; }
+
+		ABaseEnemy* enemy_hit = Cast<ABaseEnemy>(OtherActor);
+		if (enemy_hit)
+		{
+			//Gets this weapons base damage and adds to wielders weapon damage adjustments (buffs, consumable effect etc.)
+			float damage_amount = this->BaseWeaponDamage + enemy_hit->GetEnemyWeaponDamageAdjustments();
+
+			//TODO Implement get surface type to spawn the corresponding fx (hit rock vs. hit flesh) ---- don't currently have many assets for this
+
+			//Get player to damage current health
+			float cur_health = enemy_hit->GetEnemyHealthComponent()->GetCurrentHealth();
+			enemy_hit->EnemyTakeDamage(damage_amount, GetOwner()); //Damage enemy set damage causer to this weapon's wielder (player character) __ for AI BT
+			//check if player has been damaged
+			if (cur_health > enemy_hit->GetEnemyHealthComponent()->GetCurrentHealth())
+			{
+				//player damaged - play hit fx
+				this->PlayWeaponHitFX();
+			}
+		}
+	}
+
+	//See if weapon owenr is an enemy and is not self
+	ABaseEnemy* enemy_weapon_owner = Cast<ABaseEnemy>(GetOwner());
+	if (enemy_weapon_owner)
+	{
+		ABaseEnemy* enemy_hit = Cast<ABaseEnemy>(OtherActor);
+		//this is an enemy attacking another enemy, don't allow return
+		if (enemy_hit) { return; }
+
+		AWayFinderCharacter* player_hit = Cast<AWayFinderCharacter>(OtherActor);
+		if (player_hit)
+		{
+			//Gets this weapons base damage and adds to wielders weapon damage adjustments (buffs, consumable effect etc.)
+			float damage_amount = this->BaseWeaponDamage + player_hit->GetPlayerWeaponWeaponAdjustments();
+
+			//TODO Implement get surface type to spawn the corresponding fx (hit rock vs. hit flesh) ---- don't currently have many assets for this
+
+			//Get player to damage current health
+			float cur_health = player_hit->GetPlayerHealthComponent()->GetCurrentHealth();
+			player_hit->PlayerTakeDamage(damage_amount);
+			//check if player has been damaged
+			if (cur_health > player_hit->GetPlayerHealthComponent()->GetCurrentHealth())
+			{
+				//player damaged - play hit fx
+				this->PlayWeaponHitFX();
+			}
+		}
 	}
 	
-	
-	if(overlapped_actor && overlapped_actor != GetOwner())
-	{
-		
-		this->OverlapHitReturn = SweepResult;
-		
 		//UE_LOG(LogTemp, Warning, TEXT("ths is sever calling do damage"));
-		UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *SweepResult.Actor->GetName());
+		//UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *SweepResult.Actor->GetName());
 		//UE_LOG(LogTemp, Warning, TEXT("Hit actor: %s"), *this->OverlapHitReturn.Actor->GetName);
-	//	UE_LOG(LogTemp, Warning, TEXT("Hit Location X: %f"), this->OverlapHitReturn.Location.X);
-	//	UE_LOG(LogTemp, Warning, TEXT("Hit Location Y: %f"), this->OverlapHitReturn.Location.Y);
+		//	UE_LOG(LogTemp, Warning, TEXT("Hit Location X: %f"), this->OverlapHitReturn.Location.X);
+		//	UE_LOG(LogTemp, Warning, TEXT("Hit Location Y: %f"), this->OverlapHitReturn.Location.Y);
 		//UE_LOG(LogTemp, Warning, TEXT("Hit Location Z: %f"), this->OverlapHitReturn.Location.Z);\
 		//UE_LOG(LogTemp, Warning, TEXT)
-		this->bIsWaitingToApplyDamage = true;
-		this->ActorOverlappedOnUse = overlapped_actor;
-		FVector impact_particle_spawn_loc = this->SkeletalWeaponMeshComponent->GetSocketLocation(FName("weapon_spawn_impact_r"));
-		if (this->ImpactParticles)
-		{
-			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), this->ImpactParticles, impact_particle_spawn_loc);
-		}
+		//this->bIsWaitingToApplyDamage = true;
+		//this->ActorOverlappedOnUse = overlapped_actor;
 		//this->OverlapHitReturn = SweepResult;
 		//DrawDebugSphere(GetWorld(), SweepResult.Actor->GetActorLocation(), 20, 16, FColor::Red, true, 5.f);
-	}
+
 }
 
 void ABaseMeleeWeapon::OnUltimateOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -207,7 +241,17 @@ void ABaseMeleeWeapon::ToggleWeaponWaitingToApplyDamage(bool bIsWeaponWaitingToA
 	this->ActorOverlappedOnUse = nullptr;
 }
 
+void ABaseMeleeWeapon::PlayWeaponHitFX()
+{
+	//Spawn weapon hit particles
+	FVector impact_particle_spawn_loc = this->ItemMeshComponent->GetSocketLocation(FName("weapon_spawn_impact_r"));
+	if (this->ImpactParticles)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), this->ImpactParticles, impact_particle_spawn_loc);
+	}
 
+
+}
 
 void ABaseMeleeWeapon::InitWaveDataTable()
 {

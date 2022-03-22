@@ -74,6 +74,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE EWaveState GetCurrentWaveState() const { return this->WaveState; }
 
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE int32 GetCurrentBotsAlive() const { return this->NumBotsAlive; }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE int32 GetNumBotsToSpawn() const { return this->NumBotsToSpawn; }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE int32 GetWaveCountCurrent() const { return this->WaveCountCurrent; }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE int32 GetWaveCountTarget() const { return this->WaveCountTarget; }
 	
 
 protected:

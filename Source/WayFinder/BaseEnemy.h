@@ -57,6 +57,11 @@ public:
 	//This should be moved to boss sub class******
 	void ToggleEnemyInvulnverability(bool bShouldEnemyBeInvulnerable);
 
+	float GetEnemyWeaponDamageAdjustments();
+
+
+public:
+
 	UFUNCTION(BlueprintCallable)
 	void EnemyAttack();
 
@@ -74,6 +79,9 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void HideHealthBar();
+
+	UFUNCTION(BlueprintCallable)
+	void StartBehaviorTree();
 	
 
 protected:

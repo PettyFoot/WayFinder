@@ -3,10 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/DataTable.h"
+#include "GameFramework/Actor.h"
+#include "Item.h"
 #include "BaseMeleeWeapon.generated.h"
 
 //TODO
@@ -80,7 +81,7 @@ public:
 
 
 UCLASS()
-class WAYFINDER_API ABaseMeleeWeapon : public AActor
+class WAYFINDER_API ABaseMeleeWeapon : public AItem
 {
 	GENERATED_BODY()
 	
@@ -101,7 +102,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	//FORCEINLINE UStaticMeshComponent* GetStaticWeaponMeshComponent() const { return this->StaticWeaponMeshComponent; }
-	FORCEINLINE USkeletalMeshComponent* GetSkeletalWeaponMeshComponent() const { return this->SkeletalWeaponMeshComponent; }
+	//FORCEINLINE USkeletalMeshComponent* GetSkeletalWeaponMeshComponent() const { return this->SkeletalWeaponMeshComponent; }
 	FORCEINLINE float GetBaseWeaponDamage() const { return this->BaseWeaponDamage; }
 	FORCEINLINE AActor* GetActorOverlappedOnUse() { return this->ActorOverlappedOnUse; }
 
@@ -144,8 +145,7 @@ public:
 
 private:
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
-	USkeletalMeshComponent* SkeletalWeaponMeshComponent;
+
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
 		UStaticMeshComponent* StaticWeaponMeshComponent;
@@ -214,4 +214,10 @@ private:
 
 	/* TODO Add weapon type enum to allow the change of montage sections within the way finder character to enable multiple ability montages per weapon type */
 
+
+
+private:
+
+	//Called from within overlap event to do fx (particles, sounds, w.e)
+	void PlayWeaponHitFX();
 };
