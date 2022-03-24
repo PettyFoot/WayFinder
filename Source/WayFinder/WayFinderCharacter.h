@@ -18,6 +18,7 @@ class UWayFinderHealthComponent;
 class UAnimMontage;
 class ABaseEnemy;
 class AItem;
+class UInventorySystem;
 
 //TODO
 //Add enum to track character state
@@ -79,6 +80,9 @@ public:
 
 	void AdjustOverlappedItems(int32 amount_to_adjust);
 
+	//Called when player presses interact input action
+	void PressedInteract();
+
 
 public:
 
@@ -100,6 +104,11 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ToggleInvuln(bool bShouldBInvuln) { this->bIsInvuln = bShouldBInvuln; }
+
+	
+
+	//UFUNCTION(BlueprintCallable)
+	//void UseItem(AItem* item_to_use);
 
 
 
@@ -226,9 +235,8 @@ private:
 	float PlayerCombatStateTimerTime;
 
 	//Inventory
-	//Array of maps that hold (item, item amount)
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Inventory", meta = (AllowPrivateAccess = "true"))
-	TMap<AItem*, uint8> Inventory;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player Inventory", meta = (AllowPrivateAccess = "true"))
+	UInventorySystem* Inventory;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Inventory", meta = (AllowPrivateAccess = "true"))
 	bool bShouldTraceForItems;

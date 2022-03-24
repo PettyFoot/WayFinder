@@ -15,6 +15,7 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "HeadMountedDisplayFunctionLibrary.h"
+#include "InventorySystem.h"
 #include "Item.h"
 #include "Kismet/GameplayStatics.h"
 #include "Math/UnrealMathUtility.h"
@@ -73,7 +74,11 @@ AWayFinderCharacter::AWayFinderCharacter():
 
 	PlayerHealthComponent = CreateDefaultSubobject<UWayFinderHealthComponent>(TEXT("HealthComponent"));
 
-	PrimaryActorTick.TickInterval = 1.f;
+	this->Inventory = CreateDefaultSubobject<UInventorySystem>(TEXT("Inventory"));
+	this->Inventory->SetPlayerOwner(this); //Set inventories owner
+	this->Inventory->InventoryCapacity = 10; //Inventory capacity
+
+	
 }
 
   /******************************************************************************************************************************************/
@@ -94,6 +99,8 @@ void AWayFinderCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAction("AbilityTwo", IE_Pressed, this, &AWayFinderCharacter::PressedAbilityTwo);
 	PlayerInputComponent->BindAction("AbilityThree", IE_Pressed, this, &AWayFinderCharacter::PressedAbilityThree);
 	PlayerInputComponent->BindAction("UltimateAbility", IE_Pressed, this, &AWayFinderCharacter::ActivateUltimateAbility);
+
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AWayFinderCharacter::PressedInteract);
 	
 	//Move forward, sideways, & vertically axis binding
 	PlayerInputComponent->BindAxis("MoveForward", this, &AWayFinderCharacter::MoveForward);
@@ -319,7 +326,20 @@ void AWayFinderCharacter::PlayerHasDied()
 
 void AWayFinderCharacter::TraceForItems()
 {
-	if (!this->bShouldTraceForItems) { UE_LOG(LogTemp, Warning, TEXT("Returned from TraceForItems inside tick inside WFcharacter"));  return; }
+	if (!this->bShouldTraceForItems)
+	{
+		if (this->TraceHitItem)
+		{
+			this->TraceHitItem = nullptr;
+		}
+		if (this->TraceHitLastFrame)
+		{
+			this->TraceHitLastFrame = nullptr;
+		}
+		return;
+		UE_LOG(LogTemp, Warning, TEXT("Returned from TraceForItems inside tick inside WFcharacter"));
+	}
+
 
 	/* line trace for items */
 	FHitResult item_trace_hit;
@@ -430,6 +450,10 @@ void AWayFinderCharacter::PickUpItem()
 {
 	//if no item to pick up is being looked at exit
 	if (!this->TraceHitItem) { return; }
+	if (this->Inventory)
+	{
+		this->Inventory->AddItem(this->TraceHitItem);
+	}
 
 }
 
@@ -453,6 +477,12 @@ void AWayFinderCharacter::AdjustOverlappedItems(int32 amount_to_adjust)
 	}
 }
 
+void AWayFinderCharacter::PressedInteract()
+{
+	this->PickUpItem();
+
+}
+
 void AWayFinderCharacter::SpawnDefaultMeleeWeapon()
 {
 	if (this->MeleeWeaponClass)
@@ -468,6 +498,7 @@ void AWayFinderCharacter::SpawnDefaultMeleeWeapon()
 			weapon_socket->AttachActor(MeleeWeapon, GetMesh());
 			this->PlayerEquippedMeleeWeapon = MeleeWeapon;
 			MeleeWeapon->SetOwner(this);
+			this->PlayerEquippedMeleeWeapon->SetItemState(EItemState::EIS_Equipped);
 		}
 	}
 }
@@ -606,6 +637,11 @@ void AWayFinderCharacter::PlayerTakeDamage(float dmg_amount)
 	}
 	
 }
+
+/*void AWayFinderCharacter::UseItem(AItem* item_to_use)
+{
+	item_to_use->UseItem(this);
+}*/
 
 void AWayFinderCharacter::LeaveCombatState()
 {

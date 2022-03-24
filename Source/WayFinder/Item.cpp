@@ -6,11 +6,21 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
+#include "InventorySystem.h"
 #include "WayFinder.h"
 #include "WayFinderCharacter.h"
 
+
+
 // Sets default values
-AItem::AItem()
+AItem::AItem():
+	ItemState(EItemState::EIS_Default),
+	UseActionText(TEXT("Default Action Text")),
+	ItemDisplayName(TEXT("Item Default Type")),
+	ItemDescription(TEXT("Default Item Description")),
+	ItemCurrentStack(1),
+	ItemMaxStack(20),
+	bCanBeStacked(true)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -22,29 +32,21 @@ AItem::AItem()
 	//Item pick up widget
 	this->ItemPickupWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("PickupWidget"));
 	this->ItemPickupWidget->SetupAttachment(GetRootComponent());
-	this->ItemPickupWidget->SetVisibility(false);
 
 	//Create item trace enabling collision sphere 
 	this->ItemTraceEnableSphere = CreateDefaultSubobject<USphereComponent>(TEXT("ItemTraceEnableSphere"));
 	this->ItemTraceEnableSphere->SetupAttachment(GetRootComponent());
-
-	this->ItemTraceEnableSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	//this->ItemTraceEnableSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	this->ItemTraceEnableSphere->SetGenerateOverlapEvents(true);
-	this->ItemTraceEnableSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	this->ItemTraceEnableSphere->SetCollisionResponseToChannel(COLLISION_PLAYER, ECollisionResponse::ECR_Overlap);
+	//
 
 	//Box collision for player pick up capabilities
 	this->ItemPickupInteractArea = CreateDefaultSubobject<UBoxComponent>(TEXT("ItemPickupInteractArea"));
 	this->ItemPickupInteractArea->SetupAttachment(GetRootComponent());
 	
-	//this->ItemPickupInteractArea->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	this->ItemPickupInteractArea->SetGenerateOverlapEvents(true);
-	this->ItemTraceEnableSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	this->ItemPickupInteractArea->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	this->ItemPickupInteractArea->SetCollisionResponseToChannel(COLLISION_ITEM, ECollisionResponse::ECR_Block); //in the player's custom traceforitems collision channel
 
+	//this->ItemTraceEnableSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 
+	//this->SetItemState(EItemState::EIS_Constructed);
+	
 }
 
 // Called when the game starts or when spawned
@@ -52,8 +54,17 @@ void AItem::BeginPlay()
 {
 	Super::BeginPlay();
 
+	this->ItemPickupInteractArea->SetGenerateOverlapEvents(true);
+	this->ItemTraceEnableSphere->SetGenerateOverlapEvents(true);
+
+	this->ItemTraceEnableSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+
+
 	this->ItemTraceEnableSphere->OnComponentBeginOverlap.AddDynamic(this, &AItem::ItemBeingOverlapped);
 	this->ItemTraceEnableSphere->OnComponentEndOverlap.AddDynamic(this, &AItem::ItemEndOverlap);
+
+	//called to set item's initial state to be in world (overridden by spawn defualt weapon in player class)
+	this->SetItemState(EItemState::EIS_InWorld);
 	
 }
 
@@ -67,7 +78,7 @@ void AItem::ItemBeingOverlapped(UPrimitiveComponent* OverlappedComponent, AActor
 			player_overlapped->AdjustOverlappedItems(1);
 			UE_LOG(LogTemp, Warning, TEXT("Called item sphere overlap:::: %s"), *player_overlapped->GetName());
 		}
-		UE_LOG(LogTemp, Warning, TEXT("Called item sphere overlap:::: %s"), *OtherActor->GetName());
+		//UE_LOG(LogTemp, Warning, TEXT("Called item sphere overlap:::: %s"), *OtherActor->GetName());
 	}
 
 }
@@ -79,10 +90,10 @@ void AItem::ItemEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 		AWayFinderCharacter* player_overlapped = Cast<AWayFinderCharacter>(OtherActor);
 		if (player_overlapped)
 		{
-			player_overlapped->AdjustOverlappedItems(-2);
+			player_overlapped->AdjustOverlappedItems(-1);
 			UE_LOG(LogTemp, Warning, TEXT("Called item sphere end overlap"));
 		}
-		UE_LOG(LogTemp, Warning, TEXT("Called item sphere end overlap"));
+		//UE_LOG(LogTemp, Warning, TEXT("Called item sphere end overlap"));
 	}
 }
 	
@@ -93,6 +104,129 @@ void AItem::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 }
+
+void AItem::UseItem(AWayFinderCharacter* player)
+{
+}
+
+void AItem::AddedToInventory(AWayFinderCharacter* player)
+{
+	if (player)
+	{
+		this->PlayerOwner = player;
+
+		this->SetItemState(EItemState::EIS_InInventory);
+
+	}
+	else
+	{
+		this->Destroy();
+	}
+	
+}
+
+void AItem::SetItemState(EItemState state_to_set_to)
+{
+	this->ItemState = state_to_set_to;
+
+
+	switch (state_to_set_to)
+	{
+	case EItemState::EIS_Constructed:
+
+		//Turn off widget visibility
+		this->ItemPickupWidget->SetVisibility(false);
+
+		//Set item trace enabling collision sphere to overlap a player
+		this->ItemTraceEnableSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+		this->ItemTraceEnableSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+		this->ItemTraceEnableSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		
+
+		//Set up item pick up box to block player traces in the defined collision channel
+		this->ItemPickupInteractArea->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+		this->ItemPickupInteractArea->SetCollisionResponseToChannel(COLLISION_ITEM, ECollisionResponse::ECR_Block);
+		this->ItemTraceEnableSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+		break;
+	case EItemState::EIS_InWorld:
+
+		this->ItemMeshComponent->SetVisibility(true);//hide mesh
+	
+		//Turn off widget visibility
+		this->ItemPickupWidget->SetVisibility(false);
+
+		//Set item trace enabling collision sphere to overlap a player
+		//this->ItemTraceEnableSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+		this->ItemTraceEnableSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+		this->ItemTraceEnableSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+		//Set up item pick up box to block player traces in the defined collision channel
+		this->ItemPickupInteractArea->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+		this->ItemPickupInteractArea->SetCollisionResponseToChannel(COLLISION_ITEM, ECollisionResponse::ECR_Block);
+		this->ItemTraceEnableSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+		break;
+	case EItemState::EIS_InInventory:
+
+		this->ItemMeshComponent->SetVisibility(false);//hide mesh
+		//this->ItemMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		//Turn off widget visibility
+		this->ItemPickupWidget->SetVisibility(false);
+
+		//Set item trace enabling collision sphere to overlap a player
+		this->ItemTraceEnableSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+		this->ItemTraceEnableSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		
+		//Set up item pick up box to block player traces in the defined collision channel
+		this->ItemPickupInteractArea->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+		this->ItemPickupInteractArea->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		break;
+	case EItemState::EIS_Equipped: 
+
+		//Turn off widget visibility
+		this->ItemPickupWidget->SetVisibility(false);
+
+		//Set item trace enabling collision sphere to overlap a player
+		this->ItemTraceEnableSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+		this->ItemTraceEnableSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		//Set up item pick up box to block player traces in the defined collision channel
+		this->ItemPickupInteractArea->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+		this->ItemPickupInteractArea->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		break;
+	case EItemState::EIS_Equipping:
+
+		//Turn off widget visibility
+		this->ItemPickupWidget->SetVisibility(false);
+
+		//Set item trace enabling collision sphere to overlap a player
+		this->ItemTraceEnableSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+		this->ItemTraceEnableSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		//Set up item pick up box to block player traces in the defined collision channel
+		this->ItemPickupInteractArea->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+		this->ItemPickupInteractArea->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		break;
+	case EItemState::EIS_Attacking:
+
+		break;
+	case EItemState::EIS_Using:
+
+		break;
+	case EItemState::EIS_Default:
+
+		break;
+	default:
+		break;
+	}
+}
+
+
 
 
 

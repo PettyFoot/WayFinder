@@ -241,6 +241,10 @@ void ABaseMeleeWeapon::ToggleWeaponWaitingToApplyDamage(bool bIsWeaponWaitingToA
 	this->ActorOverlappedOnUse = nullptr;
 }
 
+void ABaseMeleeWeapon::UseItem(AWayFinderCharacter* player)
+{
+}
+
 void ABaseMeleeWeapon::PlayWeaponHitFX()
 {
 	//Spawn weapon hit particles

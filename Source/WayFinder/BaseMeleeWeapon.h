@@ -8,6 +8,7 @@
 #include "Engine/DataTable.h"
 #include "GameFramework/Actor.h"
 #include "Item.h"
+#include "Weapon.h"
 #include "BaseMeleeWeapon.generated.h"
 
 //TODO
@@ -81,7 +82,7 @@ public:
 
 
 UCLASS()
-class WAYFINDER_API ABaseMeleeWeapon : public AItem
+class WAYFINDER_API ABaseMeleeWeapon : public AWeapon
 {
 	GENERATED_BODY()
 	
@@ -140,7 +141,7 @@ public:
 	//Used to give character using weapon the overlapped actor
 	void ToggleWeaponWaitingToApplyDamage(bool bIsWeaponWaitingToApplyDamage);
 
-
+	virtual void UseItem(class AWayFinderCharacter* player) override;
 
 
 private:
