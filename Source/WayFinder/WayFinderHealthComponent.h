@@ -28,8 +28,8 @@ public:
 	FORCEINLINE float GetCurrentHealth() const { return this->CurrentHealth; }
 	FORCEINLINE float GetMaxHealth() const { return this->MaxHealth; }
 
-	FORCEINLINE void SetCurrentHealth(float health_adjustment)  { this->CurrentHealth = health_adjustment; }
-	FORCEINLINE void SetMaxHealth(float max_health_adjustment)  { this->MaxHealth = max_health_adjustment; }
+	FORCEINLINE void SetCurrentHealth(float health_adjustment) { this->CurrentHealth += health_adjustment; if (this->CurrentHealth > this->MaxHealth) { this->CurrentHealth = this->MaxHealth; } }
+	FORCEINLINE void SetMaxHealth(float max_health_adjustment)  { this->MaxHealth += max_health_adjustment; }
 
 
 	void HealthTakeDamage(float Damage);

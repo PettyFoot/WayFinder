@@ -243,6 +243,10 @@ void ABaseMeleeWeapon::ToggleWeaponWaitingToApplyDamage(bool bIsWeaponWaitingToA
 
 void ABaseMeleeWeapon::UseItem(AWayFinderCharacter* player)
 {
+	if (player)
+	{
+		player->EquipItem(this);
+	}
 }
 
 void ABaseMeleeWeapon::PlayWeaponHitFX()

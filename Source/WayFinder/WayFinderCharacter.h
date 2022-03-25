@@ -19,6 +19,7 @@ class UAnimMontage;
 class ABaseEnemy;
 class AItem;
 class UInventorySystem;
+class AWeapon;
 
 //TODO
 //Add enum to track character state
@@ -83,6 +84,8 @@ public:
 	//Called when player presses interact input action
 	void PressedInteract();
 
+	void UseItem(AItem* item_to_use);
+
 
 public:
 
@@ -99,11 +102,19 @@ public:
 
 	void PlayerTakeDamage(float dmg_amount);
 
+	//Negative for reducing health
+	void PlayerGainHealth(float health_amount);
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerPlayerTakeDamage(float dmg_amount);
 
 	UFUNCTION(BlueprintCallable)
 	void ToggleInvuln(bool bShouldBInvuln) { this->bIsInvuln = bShouldBInvuln; }
+
+	UFUNCTION(BlueprintCallable)
+	void EquipItem(AItem* item_to_equip);
+
+	void AttachItemToHand(AItem* item_to_attach);
 
 	
 
@@ -193,9 +204,12 @@ private:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
 	ABaseMeleeWeapon* PlayerEquippedMeleeWeapon;
 
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
+	AItem* PlayerEquippedItem;
+
 	// Melee Weapon class, can only be main hand 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<ABaseMeleeWeapon> MeleeWeaponClass;
+	TSubclassOf<AWeapon> MeleeWeaponClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Components", meta = (AllowPrivateAccess = "true"))
 		UWayFinderHealthComponent* PlayerHealthComponent;

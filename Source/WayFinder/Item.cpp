@@ -6,8 +6,8 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
-#include "InventorySystem.h"
 #include "WayFinder.h"
+#include "InventorySystem.h"
 #include "WayFinderCharacter.h"
 
 
@@ -187,6 +187,8 @@ void AItem::SetItemState(EItemState state_to_set_to)
 	case EItemState::EIS_Equipped: 
 
 		//Turn off widget visibility
+		this->ItemMeshComponent->SetVisibility(true);
+
 		this->ItemPickupWidget->SetVisibility(false);
 
 		//Set item trace enabling collision sphere to overlap a player
@@ -224,6 +226,31 @@ void AItem::SetItemState(EItemState state_to_set_to)
 	default:
 		break;
 	}
+}
+
+void AItem::CopyItemStats(AItem* item_to_copy)
+{
+	if (item_to_copy)
+	{
+		this->ItemMaxStack = item_to_copy->ItemMaxStack; //Max stack
+		this->ItemCurrentStack = item_to_copy->ItemCurrentStack; //Current stack
+		
+		this->ItemClass = item_to_copy->ItemClass; //Classes
+		this->ItemSubClass = item_to_copy->ItemSubClass;
+
+		this->UseActionText = item_to_copy->UseActionText; //Text Descriptions
+		this->ItemDisplayName = item_to_copy->ItemDisplayName;
+		this->ItemDescription = item_to_copy->ItemDescription;
+
+		this->ItemImage = item_to_copy->ItemImage; //Image
+		this->ItemWeight = item_to_copy->ItemWeight; //Weight
+
+		this->bCanBeStacked = item_to_copy->bCanBeStacked;//Stackable
+
+		this->PlayerOwner = item_to_copy->PlayerOwner;//Owners
+		this->OwningInventory = item_to_copy->OwningInventory;
+	}
+
 }
 
 

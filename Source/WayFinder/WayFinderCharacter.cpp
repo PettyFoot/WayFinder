@@ -22,6 +22,9 @@
 #include "Net/UnrealNetwork.h"
 #include "WayFinderHealthComponent.h"
 #include "WayFinder.h"
+#include "Weapon.h"
+#include "Consumable.h"
+#include "Food.h"
 
 
 
@@ -75,8 +78,6 @@ AWayFinderCharacter::AWayFinderCharacter():
 	PlayerHealthComponent = CreateDefaultSubobject<UWayFinderHealthComponent>(TEXT("HealthComponent"));
 
 	this->Inventory = CreateDefaultSubobject<UInventorySystem>(TEXT("Inventory"));
-	this->Inventory->SetPlayerOwner(this); //Set inventories owner
-	this->Inventory->InventoryCapacity = 10; //Inventory capacity
 
 	
 }
@@ -230,10 +231,14 @@ void AWayFinderCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (HasAuthority())
-	{
+	//if (HasAuthority())
+	//{
 		this->SpawnDefaultMeleeWeapon();
-	}
+		this->Inventory->SetPlayerOwner(this); //Set inventories owner
+		this->Inventory->InventoryCapacity = 10; //Inventory capacity
+
+		float something_set = 0.5f;
+	//}
 
 
 }
@@ -488,20 +493,72 @@ void AWayFinderCharacter::SpawnDefaultMeleeWeapon()
 	if (this->MeleeWeaponClass)
 	{
 		//Spawn a basemeleeweapon
-		ABaseMeleeWeapon* MeleeWeapon = GetWorld()->SpawnActor<ABaseMeleeWeapon>(this->MeleeWeaponClass);
+		ABaseMeleeWeapon* MeleeWeapon = this->GetWorld()->SpawnActor<ABaseMeleeWeapon>(this->MeleeWeaponClass);
 
 		//get weapon socket of mesh
-		const USkeletalMeshSocket* weapon_socket = GetMesh()->GetSocketByName(FName(TEXT("weapon_socket_r")));
-		if (weapon_socket)
-		{
-			//Attach weapon to weapon socket of main hand on player mesh
-			weapon_socket->AttachActor(MeleeWeapon, GetMesh());
-			this->PlayerEquippedMeleeWeapon = MeleeWeapon;
-			MeleeWeapon->SetOwner(this);
-			this->PlayerEquippedMeleeWeapon->SetItemState(EItemState::EIS_Equipped);
-		}
+	
+		this->PlayerEquippedMeleeWeapon = MeleeWeapon;
+		MeleeWeapon->SetOwner(this);
+		this->AttachItemToHand(MeleeWeapon);
 	}
 }
+
+void AWayFinderCharacter::EquipItem(AItem* item_to_equip)
+{
+	
+	//Add a weapon type (axe, sword, katana, mace, etc.) to switch on
+	//Weapon is melee type
+	ABaseMeleeWeapon* melee_weapon = Cast<ABaseMeleeWeapon>(item_to_equip);
+	if (melee_weapon)
+	{
+		if (this->PlayerEquippedMeleeWeapon)
+		{
+			if (this->Inventory->RemoveItem(item_to_equip->InventorySlotIndex))
+			{
+				this->Inventory->AddItem(this->PlayerEquippedMeleeWeapon, item_to_equip->InventorySlotIndex);
+				this->PlayerEquippedMeleeWeapon = melee_weapon;
+				this->AttachItemToHand(this->PlayerEquippedMeleeWeapon);
+				UE_LOG(LogTemp, Warning, TEXT("Could not remove item__EquipItem::AWayfinderCharacter"));
+			}
+				
+		}
+		else
+		{
+			if (!this->Inventory->RemoveItem(item_to_equip->InventorySlotIndex))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Could not remove item__EquipItem::AWayfinderCharacter"));
+			}
+			this->PlayerEquippedMeleeWeapon = melee_weapon;
+			this->AttachItemToHand(this->PlayerEquippedMeleeWeapon);
+		}
+	}
+	//non melee type ADD these
+}
+
+void AWayFinderCharacter::AttachItemToHand(AItem* item_to_attach)
+{
+	//get weapon socket of mesh
+	const USkeletalMeshSocket* weapon_socket = GetMesh()->GetSocketByName(FName(TEXT("weapon_socket_r")));
+	if (weapon_socket)
+	{
+		//Attach weapon to weapon socket of main hand on player mesh
+		weapon_socket->AttachActor(item_to_attach, GetMesh());
+		item_to_attach->SetItemState(EItemState::EIS_Equipped);
+	}
+}
+
+void AWayFinderCharacter::UseItem(AItem* item_to_use)
+{
+
+	AWeapon* weapon_item = Cast<AWeapon>(item_to_use);
+	if (weapon_item)
+	{
+		this->EquipItem(weapon_item);
+	}
+	
+
+}
+
 
 
 /******************************************************************************************************************************************/
@@ -636,6 +693,14 @@ void AWayFinderCharacter::PlayerTakeDamage(float dmg_amount)
 		this->ServerPlayerTakeDamage(dmg_amount);
 	}
 	
+}
+
+void AWayFinderCharacter::PlayerGainHealth(float health_amount)
+{
+	if (this->PlayerHealthComponent)
+	{
+		this->PlayerHealthComponent->SetCurrentHealth(health_amount);
+	}
 }
 
 /*void AWayFinderCharacter::UseItem(AItem* item_to_use)

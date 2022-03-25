@@ -34,31 +34,46 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
 	bool bIsEOT;
 
+	bool Started;
+	bool Ended;
+
 	//Timer handle to manage the effect over time 
 	FTimerHandle EffectTimerHandle;
 
-	//total effect time of consumable
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
-	float EffectTimerTotalTime;
+	//Consumable's overall effect time (This can be different from effect over time)
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
+	//float ConsumableEffectDurationLongTerm;
 
-	//Number of ticks to apply to target
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
-	int32 NumOfTimesToTick;
+	//total effect time of consumable
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
+	float EffectDuration;
 
 	//Time between tick effects
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
 	float EffectTimerTickTime;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
+	float TotalEffectDone;
+
+	bool DestroyOnComplete;
+
+	//Number of ticks to apply to target
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
+	int32 NumOfTimesToTick;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
+	int32 NumOfTimesTicked;
+
 	//Timer handle for consumables overall duration
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
 	FTimerHandle ConsumableEffectDurationTimerHande;
 
-	//Consumable's overall effect time (This can be different from effect over time)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
-	float ConsumableEffectDuration;
+	//Amount to heal, damage, cc or buff the player
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
+	float EffectAmount;
 
 	//Effect of consumable
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
 	EConsumableEffectType ConsumableEffectType;
 
 	//OVerride from parent class : AItem
@@ -68,5 +83,14 @@ public:
 	//virtual void OnApplyEffect(AActor* entity_to_apply_effect) PURE_VIRTUAL(AConsumable, );
 
 	virtual void BeginPlay() override;
+
+	
+
+	void ConsumableHeal();
+
+	void HealPlayer();
+
+
+	class AWayFinderCharacter* TempPlayerEffecting;
 	
 };
