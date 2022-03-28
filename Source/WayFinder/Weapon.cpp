@@ -7,7 +7,13 @@
 
 AWeapon::AWeapon()
 {
+	PrimaryActorTick.bCanEverTick = true;
 
+}
+
+void AWeapon::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
 }
 
 void AWeapon::UseItem(AWayFinderCharacter* player)
@@ -18,5 +24,16 @@ void AWeapon::UseItem(AWayFinderCharacter* player)
 void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void AWeapon::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
+
+void AWeapon::InitWithItemInfo(FItemInfoStruct iteminfo)
+{
+	Super::InitWithItemInfo(iteminfo);
 }
 

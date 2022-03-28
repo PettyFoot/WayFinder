@@ -5,8 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Engine/DataTable.h"
-#include "Engine/Texture2D.h"
-
+#include "ItemInfo.h"
 #include "Item.generated.h"
 
 
@@ -15,17 +14,9 @@ class UWidgetComponent;
 class USkeletalMeshComponent;
 class UBoxComponent;
 class AWayFinderCharacter;
+class UItemInfo;
 
-UENUM(BlueprintType)
-enum class EItemClass : uint8
-{
-	IC_Weapon UMETA(DisplayName = "Weapon"),
-	IC_Consumable UMETA(DisplayName = "Consumable"),
-	IC_Armor UMETA(DisplayName = "Armor"),
-	IC_QuestItem UMETA(DisplayName = "Quest Item"),
-	IC_Readable UMETA(DisplayName = "Readable")
-	
-};
+
 
 UENUM(BlueprintType)
 enum class EItemState : uint8
@@ -41,38 +32,9 @@ enum class EItemState : uint8
 
 };
 
-USTRUCT(BlueprintType)
-struct FItemInfo : public FTableRowBase
-{
-	GENERATED_BODY()
-
-public:
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		EItemClass DTItemClass;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		TSubclassOf<AItem> DTItemSubClass;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FName DTItemName;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		UTexture2D* DTItemImage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		uint8 DTItemCurrentStack;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		uint8 DTItemMaxStack;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		uint8 DTItemIndex;
 
 
-};
-
-UCLASS(BlueprintType, Blueprintable)
+UCLASS()
 class WAYFINDER_API AItem : public AActor
 {
 	GENERATED_BODY()
@@ -81,9 +43,19 @@ public:
 	// Sets default values for this actor's properties
 	AItem();
 
+	virtual void SpawnFromRarityTable(int32 level_to_spawn);
+
+	virtual void OnConstruction(const FTransform& Transform) override;
+
 public:
 
 	FORCEINLINE UWidgetComponent* GetPickupWidget() const { return this->ItemPickupWidget; }
+
+
+	//Called from loot table to populate item with item info from enemies loot table
+	//Sets item based on item info uobject (used for loot table item spawns)
+	UFUNCTION(BlueprintCallable)
+	virtual void InitWithItemInfo(FItemInfoStruct iteminfo);
 
 protected:
 	// Called when the game starts or when spawned
@@ -94,6 +66,7 @@ protected:
 
 	UFUNCTION()
 	void ItemEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
 
 public:	
 	// Called every frame
@@ -106,7 +79,15 @@ public:
 	UWidgetComponent* ItemPickupWidget;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-	USkeletalMeshComponent* ItemMeshComponent;
+	USkeletalMeshComponent* ItemSkeletalMeshComponent;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	USkeletalMesh* ItemSkeletalMesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	UStaticMeshComponent* ITemStaticMeshComponent;
+
+	UStaticMesh* ItemStaticMesh;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	UBoxComponent* ItemPickupInteractArea;
@@ -119,38 +100,38 @@ public:
 
 	//virtual class UWorld* GetWorld() const { return this->World; }
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	FString UseActionText;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	EItemClass ItemClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<AItem> ItemSubClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	FString ItemDisplayName;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true", MultiLine = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	FString ItemDescription;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	UTexture2D* ItemImage;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true", ClampMin = 0.f))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	float ItemWeight;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	uint8 ItemCurrentStack;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	uint8 ItemMaxStack;
 
 	//-1 if not inside an inventory (Default state!)
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	int32 InventorySlotIndex;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	bool bCanBeStacked;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item Owner", meta = (AllowPrivateAccess = "true"))
@@ -161,6 +142,10 @@ public:
 
 	UPROPERTY()
 	class UInventorySystem* OwningInventory;
+
+	//Used to set certain aspects of the item's capabilities
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	int32 ItemLevel;
 
 
 public:
@@ -179,5 +164,7 @@ public:
 	virtual void SetItemState(EItemState state_to_set_to);
 
 	void CopyItemStats(AItem* item_to_copy);
+
+
 
 };

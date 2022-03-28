@@ -63,7 +63,10 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Inventory Stats")
 	AWayFinderCharacter* InventoryOwner;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory Stats")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true", MultiLine = "true"))
+	float MaxWeight;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory Stats")
 	TArray<AItem*> Items;
 
 	AItem* SelectedItem;
@@ -76,6 +79,8 @@ protected:
 	virtual void BeginPlay() override;
 
 	bool TryAddItemToExistentItemInInventory(AItem* item_to_add, bool binventoryfull = false);
+
+	bool FinalAdd(AItem* item_to_add, int32 amount_to_add = 1);
 
 		
 };

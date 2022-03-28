@@ -18,7 +18,12 @@ public:
 
 	AFood();
 
+	virtual void OnConstruction(const FTransform& Transform) override;
+
 	virtual void UseItem(class AWayFinderCharacter* player) override;
 
 	virtual void BeginPlay() override;
+
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
 };

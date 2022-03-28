@@ -1,9 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
+#include "Consumable.h"
 #include "WayFinderCharacter.h"
 #include "InventorySystem.h"
-#include "Consumable.h"
+
 
 AConsumable::AConsumable():
 	NumOfTimesToTick(1),
@@ -13,7 +14,22 @@ AConsumable::AConsumable():
 	TotalEffectDone(0.f),
 	DestroyOnComplete(false)
 {
+	PrimaryActorTick.bCanEverTick = true;
+}
 
+void AConsumable::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+}
+
+void AConsumable::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
+void AConsumable::InitWithItemInfo(FItemInfoStruct iteminfo)
+{
+	Super::InitWithItemInfo(iteminfo);
 }
 
 void AConsumable::UseItem(AWayFinderCharacter* player)

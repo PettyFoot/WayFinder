@@ -20,6 +20,7 @@ class ABaseEnemy;
 class AItem;
 class UInventorySystem;
 class AWeapon;
+class ULevelSystem;
 
 //TODO
 //Add enum to track character state
@@ -37,6 +38,7 @@ enum class EPlayerState : uint8
 	PS_Dead,
 	PS_Buffed
 };
+
 
 
 UCLASS(config=Game)
@@ -61,6 +63,11 @@ public:
 	FORCEINLINE bool GetIsPlayerDead() const { return this->bIsPlayerDead; }
 
 	FORCEINLINE ABaseMeleeWeapon* GetPlayerEquippedWeapon() const { return this->PlayerEquippedMeleeWeapon; }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE AItem* GetItemHit() const { return this->TraceHitItem; }
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE bool GetShouldTraceForItems() const { return this->bShouldTraceForItems; }
 
 
 public:
@@ -266,6 +273,10 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Inventory", meta = (AllowPrivateAccess = "true"))
 	uint8 InventoryCapacity;
+
+	//Level component
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Inventory", meta = (AllowPrivateAccess = "true"))
+	ULevelSystem* PlayerLevelSystem;
 
 	
 	

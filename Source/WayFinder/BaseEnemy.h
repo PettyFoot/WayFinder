@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "WayFinderCharacter.h"
 #include "BehaviorTree/BehaviorTree.h"
+#include "ItemInfo.h"
 #include "BaseEnemy.generated.h"
 
 
@@ -24,6 +25,26 @@ class UAnimMontage;
 class UBoxComponent;
 class UParticleSystem;
 class UParticleSystemComponent;
+class ULootTable;
+class ULevelSystem;
+class AWayFinderGameMode;
+class AItem;
+class ABaseMeleeWeapon;
+class AConsumable;
+struct FItemInfoStruct;
+
+
+UENUM(BlueprintType)
+enum class ELootTableAdjuster : uint8
+{
+	EIR_A,
+	EIR_B,
+	EIR_C,
+	EIR_D,
+	EIR_E,
+	EIR_XXX
+};
+
 
 
 UCLASS()
@@ -38,15 +59,24 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
+	bool test;
+	bool test2;
+
 public:
 
 	FORCEINLINE UBehaviorTree* GetBehaviorTree() const { return this->EnemyBehaviorTree; }
 	FORCEINLINE bool GetEnemyInvulnerability() const { return this->bIsInvulvernable; }
 	FORCEINLINE bool GetIsEnemyDead() const { return this->bIsEnemyDead; }
 	FORCEINLINE bool GetIsEventTriggered() const { return this->bEventTriggered; }
+	FORCEINLINE int32 GetEnemyLevel() const { return this->EnemyLevel; }
+	
 
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE UWayFinderHealthComponent* GetEnemyHealthComponent() { return this->EnemyHealthComponent; }
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
+	ULootTable* EnemyLootTable;
 
 	//Damage enemy by amount, death is handled through the gamemode for game mode logic and for eaasy replication (DONT CHANGE THIS METHOD UNTIL FOUND A BETTER METHOD)
 	void EnemyTakeDamage(float DamageAmount, AActor* damage_causer);
@@ -58,6 +88,27 @@ public:
 	void ToggleEnemyInvulnverability(bool bShouldEnemyBeInvulnerable);
 
 	float GetEnemyWeaponDamageAdjustments();
+
+	AWayFinderGameMode* EnemyGameMode;
+
+	UFUNCTION(BlueprintCallable)
+	EItemClass SpawnItem(FItemInfoStruct iteminfo);
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void SpawnDrop();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	AItem* spawned_item;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	ABaseMeleeWeapon* spawned_weapon;
+
+	TSharedPtr<ABaseMeleeWeapon> spawned_weapon_weakptr_weapon;
+	TSharedPtr<AConsumable> spawned_weapon_weakptr_consumable;
+	TSharedPtr<AItem> spawned_weapon_weakptr_item;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	AConsumable* spawned_consumable;
 
 
 public:
@@ -82,6 +133,12 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void StartBehaviorTree();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+		ELootTableAdjuster LootTableRarityPercentageEnum;
+
+	
+
 	
 
 protected:
@@ -200,6 +257,9 @@ private:
 	//Time before health bar is hidden 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
 	float ShowHealthBarTimerTime;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
+	int32 EnemyLevel;
 
 
 private:

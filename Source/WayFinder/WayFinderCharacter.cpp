@@ -18,6 +18,7 @@
 #include "InventorySystem.h"
 #include "Item.h"
 #include "Kismet/GameplayStatics.h"
+#include "LevelSystem.h"
 #include "Math/UnrealMathUtility.h"
 #include "Net/UnrealNetwork.h"
 #include "WayFinderHealthComponent.h"
@@ -78,6 +79,9 @@ AWayFinderCharacter::AWayFinderCharacter():
 	PlayerHealthComponent = CreateDefaultSubobject<UWayFinderHealthComponent>(TEXT("HealthComponent"));
 
 	this->Inventory = CreateDefaultSubobject<UInventorySystem>(TEXT("Inventory"));
+	//this->Inventory->Owner
+
+	this->PlayerLevelSystem = CreateDefaultSubobject<ULevelSystem>(TEXT("PlayerLevel"));
 
 	
 }
@@ -224,7 +228,7 @@ void AWayFinderCharacter::Tick(float DeltaTime)
 
 	this->TraceForItems();
 
-	UE_LOG(LogTemp, Warning, TEXT("num overlapping: %d"), this->NumItemsOverlapping);
+	//UE_LOG(LogTemp, Warning, TEXT("num overlapping: %d"), this->NumItemsOverlapping);
 }
 
 void AWayFinderCharacter::BeginPlay()
@@ -236,6 +240,9 @@ void AWayFinderCharacter::BeginPlay()
 		this->SpawnDefaultMeleeWeapon();
 		this->Inventory->SetPlayerOwner(this); //Set inventories owner
 		this->Inventory->InventoryCapacity = 10; //Inventory capacity
+		
+
+		this->PlayerLevelSystem->SetLevelSystemOwner(this);
 
 		float something_set = 0.5f;
 	//}
@@ -342,7 +349,7 @@ void AWayFinderCharacter::TraceForItems()
 			this->TraceHitLastFrame = nullptr;
 		}
 		return;
-		UE_LOG(LogTemp, Warning, TEXT("Returned from TraceForItems inside tick inside WFcharacter"));
+		//UE_LOG(LogTemp, Warning, TEXT("Returned from TraceForItems inside tick inside WFcharacter"));
 	}
 
 
@@ -400,7 +407,7 @@ bool AWayFinderCharacter::TraceUnderCrosshairs(FHitResult& out_hit_result, FVect
 	FVector2D viewportsize;
 	if (GEngine && GEngine->GameViewport)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Geninge"));
+		//UE_LOG(LogTemp, Warning, TEXT("Geninge"));
 		GEngine->GameViewport->GetViewportSize(viewportsize);
 	}
 
@@ -432,7 +439,7 @@ bool AWayFinderCharacter::TraceUnderCrosshairs(FHitResult& out_hit_result, FVect
 				out_hit_location = out_hit_result.Location;
 				return true;
 			}
-			UE_LOG(LogTemp, Warning, TEXT("No blocking hit"));
+			//UE_LOG(LogTemp, Warning, TEXT("No blocking hit"));
 			//DrawDebugLine(GetWorld(), start, out_hit_location, FColor::Red, false, 1.f, 0, 2.f);
 		}
 		else

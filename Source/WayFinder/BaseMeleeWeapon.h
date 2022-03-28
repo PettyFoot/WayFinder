@@ -42,6 +42,8 @@ struct FWeaponStats : public FTableRowBase
 	GENERATED_BODY()
 
 public:
+
+
 	//Base weapon damage
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		float DTBaseWeaponDamage;
@@ -68,13 +70,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UParticleSystem* DTUltAbilityParticles;
 
-
-
-
-
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	//	UStaticMeshComponent* DTStaticWeaponMeshComponent;
-
 
 };
 
@@ -101,6 +98,10 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	//Called from loot table to populate item with item info from enemies loot table
+	//Sets item based on item info uobject (used for loot table item spawns)
+	virtual void InitWithItemInfo(FItemInfoStruct iteminfo) override;
 
 	//FORCEINLINE UStaticMeshComponent* GetStaticWeaponMeshComponent() const { return this->StaticWeaponMeshComponent; }
 	//FORCEINLINE USkeletalMeshComponent* GetSkeletalWeaponMeshComponent() const { return this->SkeletalWeaponMeshComponent; }

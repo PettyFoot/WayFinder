@@ -8,6 +8,9 @@
 #include "BaseEnemy.h"
 #include "WayFinderGameMode.generated.h"
 
+
+class AItem;
+
 UENUM()
 enum class EWaveDifficulty : uint8
 {
@@ -85,6 +88,12 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE int32 GetWaveCountTarget() const { return this->WaveCountTarget; }
+
+	UPROPERTY(VisibleAnywhere, Category = "Loot")
+	TArray<AItem*> SpawnedLoot;
+
+//	UPROPERTY(VisibleAnywhere, Category = "Loot")
+	//TArray<AItem> SpawnedItemsPermanent;
 	
 
 protected:

@@ -30,6 +30,15 @@ public:
 
 	AConsumable();
 
+	virtual void OnConstruction(const FTransform& Transform) override;
+
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+	//Called from loot table to populate item with item info from enemies loot table
+	//Sets item based on item info uobject (used for loot table item spawns)
+	virtual void InitWithItemInfo(FItemInfoStruct iteminfo) override;
+
 	//If this consumable is EOT(Effect over time)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
 	bool bIsEOT;

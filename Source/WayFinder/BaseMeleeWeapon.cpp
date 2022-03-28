@@ -39,20 +39,15 @@ ABaseMeleeWeapon::ABaseMeleeWeapon():
 	this->WeaponCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ABaseMeleeWeapon::OnWeaponOverlap);
 
 	this->UltAbilityAOE = CreateDefaultSubobject<USphereComponent>(TEXT("WeaponUltimateAbilityAOE"));
-	this->UltAbilityAOE->AttachTo(this->ItemMeshComponent, FName("FX_ult"));
+	this->UltAbilityAOE->AttachTo(this->ItemSkeletalMeshComponent, FName("FX_ult"));
 	this->UltAbilityAOE->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	this->UltAbilityAOE->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	this->UltAbilityAOE->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 	this->UltAbilityAOE->SetGenerateOverlapEvents(true);
 	this->UltAbilityAOE->OnComponentBeginOverlap.AddDynamic(this, &ABaseMeleeWeapon::OnUltimateOverlap);
-	
 
-	//this->UltimateChargeCurrent = this->UltimateChargeMax;
-
-	//this->bIs
 	this->bReplicates = true;
 
-	
 }
 
 
@@ -74,6 +69,11 @@ void ABaseMeleeWeapon::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void ABaseMeleeWeapon::InitWithItemInfo(FItemInfoStruct iteminfo)
+{
+	Super::InitWithItemInfo(iteminfo);
 }
 
 void ABaseMeleeWeapon::SetUltimateCharge(float adj_amount)
@@ -252,7 +252,7 @@ void ABaseMeleeWeapon::UseItem(AWayFinderCharacter* player)
 void ABaseMeleeWeapon::PlayWeaponHitFX()
 {
 	//Spawn weapon hit particles
-	FVector impact_particle_spawn_loc = this->ItemMeshComponent->GetSocketLocation(FName("weapon_spawn_impact_r"));
+	FVector impact_particle_spawn_loc = this->ItemSkeletalMeshComponent->GetSocketLocation(FName("weapon_spawn_impact_r"));
 	if (this->ImpactParticles)
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), this->ImpactParticles, impact_particle_spawn_loc);

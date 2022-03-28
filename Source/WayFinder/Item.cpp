@@ -8,6 +8,7 @@
 #include "Components/WidgetComponent.h"
 #include "WayFinder.h"
 #include "InventorySystem.h"
+#include "ItemInfo.h"
 #include "WayFinderCharacter.h"
 
 
@@ -25,9 +26,22 @@ AItem::AItem():
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	this->ItemMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ItemMesh"));
-	SetRootComponent(this->ItemMeshComponent);
-	//this->ItemMeshComponent
+
+
+	this->ITemStaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ItemStaticMeshComponent"));
+	if (this->ItemStaticMesh)
+	{
+		this->ITemStaticMeshComponent->SetStaticMesh(this->ItemStaticMesh);
+	}
+	SetRootComponent(this->ITemStaticMeshComponent);
+
+
+	this->ItemSkeletalMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ItemSkeletalMeshComponent"));
+	this->ItemSkeletalMeshComponent->SetupAttachment(GetRootComponent());
+	if (this->ItemSkeletalMesh)
+	{
+		this->ItemSkeletalMeshComponent->SetSkeletalMesh(this->ItemSkeletalMesh);
+	}
 
 	//Item pick up widget
 	this->ItemPickupWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("PickupWidget"));
@@ -36,6 +50,7 @@ AItem::AItem():
 	//Create item trace enabling collision sphere 
 	this->ItemTraceEnableSphere = CreateDefaultSubobject<USphereComponent>(TEXT("ItemTraceEnableSphere"));
 	this->ItemTraceEnableSphere->SetupAttachment(GetRootComponent());
+	this->ItemTraceEnableSphere->SetSphereRadius(320.f);
 	//
 
 	//Box collision for player pick up capabilities
@@ -49,6 +64,43 @@ AItem::AItem():
 	
 }
 
+void AItem::SpawnFromRarityTable(int32 level_to_spawn)
+{
+	this->SetItemState(EItemState::EIS_InWorld);
+
+}
+
+void AItem::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+}
+
+
+void AItem::InitWithItemInfo(FItemInfoStruct iteminfo)
+{
+
+	this->ItemStaticMesh = iteminfo.ITemStaticMesh;
+	this->ItemSkeletalMesh = iteminfo.ItemSkeletalMesh;
+	this->ItemSkeletalMeshComponent->SetSkeletalMesh(ItemSkeletalMesh);
+	this->ITemStaticMeshComponent->SetStaticMesh(ItemStaticMesh);
+
+	this->UseActionText = iteminfo.UseActionText;
+	this->ItemClass = iteminfo.ItemClass;
+	this->ItemSubClass = iteminfo.ItemSubClass;
+	this->ItemDisplayName = iteminfo.ItemDisplayName;
+	this->ItemDescription = iteminfo.ItemDescription;
+
+	this->ItemImage = iteminfo.ItemImage;
+
+	this->ItemWeight = iteminfo.ItemWeight;
+	this->ItemCurrentStack = iteminfo.ItemCurrentStack;
+	this->ItemMaxStack = iteminfo.ItemMaxStack;
+	this->InventorySlotIndex = iteminfo.InventorySlotIndex;
+	this->bCanBeStacked = iteminfo.bCanBeStacked;
+	this->ItemLevel = iteminfo.ItemLevel;
+
+}
+
 // Called when the game starts or when spawned
 void AItem::BeginPlay()
 {
@@ -58,6 +110,16 @@ void AItem::BeginPlay()
 	this->ItemTraceEnableSphere->SetGenerateOverlapEvents(true);
 
 	this->ItemTraceEnableSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	//this->ItemSkeletalMeshComponent->SetSimulatePhysics(true);
+	//this->ItemSkeletalMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+	this->ITemStaticMeshComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	this->ITemStaticMeshComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
+	this->ITemStaticMeshComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
+	//this->ITemStaticMeshComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+	this->ITemStaticMeshComponent->SetSimulatePhysics(true);
+	this->ITemStaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	this->ITemStaticMeshComponent->SetLinearDamping(2.f);
 
 
 	this->ItemTraceEnableSphere->OnComponentBeginOverlap.AddDynamic(this, &AItem::ItemBeingOverlapped);
@@ -120,7 +182,7 @@ void AItem::AddedToInventory(AWayFinderCharacter* player)
 	}
 	else
 	{
-		this->Destroy();
+		//this->Destroy();
 	}
 	
 }
@@ -151,7 +213,11 @@ void AItem::SetItemState(EItemState state_to_set_to)
 		break;
 	case EItemState::EIS_InWorld:
 
-		this->ItemMeshComponent->SetVisibility(true);//hide mesh
+		this->ItemSkeletalMeshComponent->SetVisibility(true);//show mesh
+		this->ITemStaticMeshComponent->SetVisibility(true);//shows mesh
+		this->ITemStaticMeshComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
+		this->ITemStaticMeshComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
+		this->ITemStaticMeshComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 	
 		//Turn off widget visibility
 		this->ItemPickupWidget->SetVisibility(false);
@@ -169,8 +235,10 @@ void AItem::SetItemState(EItemState state_to_set_to)
 		break;
 	case EItemState::EIS_InInventory:
 
-		this->ItemMeshComponent->SetVisibility(false);//hide mesh
+		this->ItemSkeletalMeshComponent->SetVisibility(false);//hide mesh
 		//this->ItemMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		this->ITemStaticMeshComponent->SetVisibility(false);//hide mesh
+		this->ITemStaticMeshComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 
 		//Turn off widget visibility
 		this->ItemPickupWidget->SetVisibility(false);
@@ -187,7 +255,8 @@ void AItem::SetItemState(EItemState state_to_set_to)
 	case EItemState::EIS_Equipped: 
 
 		//Turn off widget visibility
-		this->ItemMeshComponent->SetVisibility(true);
+		this->ItemSkeletalMeshComponent->SetVisibility(true);
+		this->ITemStaticMeshComponent->SetVisibility(true);//show mesh
 
 		this->ItemPickupWidget->SetVisibility(false);
 

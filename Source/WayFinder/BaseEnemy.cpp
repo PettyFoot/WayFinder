@@ -12,10 +12,18 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "LootTable.h"
+#include "LevelSystem.h"
+#include "Item.h"
+#include "Consumable.h"
+#include "BaseMeleeWeapon.h"
+#include "Weapon.h"
+
 #include "Particles/ParticleSystem.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "WayFinderHealthComponent.h"
 #include "WayFinderCharacter.h"
+#include "WayFinderGameMode.h"
 
 ABaseEnemy::ABaseEnemy():
 	PatrolPointOne(FVector(0.f)),
@@ -29,6 +37,10 @@ ABaseEnemy::ABaseEnemy():
 {
 	EnemyHealthComponent = CreateDefaultSubobject<UWayFinderHealthComponent>(TEXT("HealthComponent"));
 
+	this->EnemyLootTable = CreateDefaultSubobject<ULootTable>(TEXT("LootTable"));
+	this->EnemyLootTable->LootTableOwner = this;
+
+
 	this->EventEnableCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("EventCollisionBox"));
 	this->EventEnableCollisionBox->SetupAttachment(GetRootComponent());
 	this->EventEnableCollisionBox->SetGenerateOverlapEvents(true);
@@ -36,6 +48,8 @@ ABaseEnemy::ABaseEnemy():
 	this->EventEnableCollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
 	this->bReplicates = true;
+
+	PrimaryActorTick.bCanEverTick = true;
 }
 
 void ABaseEnemy::StartBehaviorTree()
@@ -83,6 +97,14 @@ void ABaseEnemy::BeginPlay()
 
 	//this->StartBehaviorTree();
 
+	this->EnemyGameMode = Cast<AWayFinderGameMode>(GetWorld()->GetAuthGameMode());
+	if (EnemyGameMode)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Found game mode on ememy"));
+	}
+	this->test = false;
+	this->test2 = false;
+
 	this->SpawnDefaultMeleeWeapon();
 
 }
@@ -115,6 +137,89 @@ void ABaseEnemy::EndOverlapEventCollisionsBox(UPrimitiveComponent* OverlappedCom
 void ABaseEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (IsValid(this->spawned_consumable))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("spawned Consume"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("NOOOOOOOOOOOOO Consume"));
+	}
+
+	if (!this->test)
+	{
+		if (IsValid(this->spawned_weapon))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("spawned Weapon"));
+			this->test = true;
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("NOOOOOOOOOOOOO WEAPON"));
+
+		}
+	}
+	else
+	{
+		if (IsValid(this->spawned_weapon))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("spawned Weapon"));
+			this->test = true;
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("NOOOOOOOOOOOOO WEAPON"));
+
+		}
+
+	}
+
+	if (IsValid(this->spawned_item))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("spawned item"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("NOOOOOOOOOOOOO item"));
+	}
+
+	if (!this->test)
+	{
+		if (this->spawned_weapon)
+		{
+			this->test = true;
+			UE_LOG(LogTemp, Warning, TEXT("spawned Weapon"));
+		}
+	}
+
+	if (this->test)
+	{
+		if (!this->spawned_weapon)
+		{
+			//weapon test
+			UE_LOG(LogTemp, Warning, TEXT("no weapon Weapon"));
+		}
+	}
+
+	if (!this->test2)
+	{
+		if (this->spawned_consumable)
+		{
+			this->test = true;
+			UE_LOG(LogTemp, Warning, TEXT("spawned consume"));
+		}
+	}
+
+	if (this->test2)
+	{
+		if (!this->spawned_consumable)
+		{
+			//Consumable test
+			UE_LOG(LogTemp, Warning, TEXT("no consume consume"));
+		}
+	}
+
 
 	if (this->AttackingPlayer)
 	{
@@ -190,6 +295,114 @@ float ABaseEnemy::GetEnemyWeaponDamageAdjustments()
 {
 	return 0.0f;
 }
+
+EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
+{
+	FActorSpawnParameters SpawnParams = FActorSpawnParameters();
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+	float RandomSpawnPlacement = FMath::RandRange(50, 100);
+
+	FVector spawnadjust(RandomSpawnPlacement, RandomSpawnPlacement, 150.f);
+
+	int32 generated_rarity = FMath::RandRange(GetEnemyLevel() - 2, GetEnemyLevel() + 2);
+
+	if (iteminfo.ItemClass == EItemClass::IC_Armor)
+	{
+		//TODO
+	}
+	else if (iteminfo.ItemClass == EItemClass::IC_Consumable)
+	{
+		//Spawn item
+		return EItemClass::IC_Consumable;
+	/*	AConsumable* consume = this->GetWorld()->SpawnActor<AConsumable>(AConsumable::StaticClass(), GetActorLocation() + spawnadjust,
+			GetActorRotation(), SpawnParams);
+		//spawned_weapon_weakptr_consumable = MakeShareable(consume);
+		if (IsValid(consume))
+		{
+			//consume->AddToRoot();
+			//Point member
+			this->spawned_consumable = consume;
+			//this->spawned_consumable->AddToRoot();
+		}
+
+		//this->spawned_consumable->SetOwner(this->LootTableOwner);
+		if (spawned_consumable)
+		{
+			consume->InitWithItemInfo(iteminfo);
+			//spawned_consumable->SetLifeSpan(100000000.f);
+			//spawned_consumable->SetActorLocation(this->LootTableOwner->GetActorLocation());
+			this->EnemyLootTable->ThrowItem(consume);
+			consume->SetItemState(EItemState::EIS_InWorld);
+			consume->ItemLevel = generated_rarity;
+			this->EnemyGameMode->SpawnedLoot.Add(consume);
+			UE_LOG(LogTemp, Error, TEXT("Spawned Item__Consumable: %s"), *consume->ItemDisplayName);
+		}*/
+
+	}
+	else if (iteminfo.ItemClass == EItemClass::IC_QuestItem)
+	{
+		//TODO
+	}
+	else if (iteminfo.ItemClass == EItemClass::IC_Weapon)
+	{
+		return EItemClass::IC_Weapon;
+		/*ABaseMeleeWeapon* weapon = this->GetWorld()->SpawnActor<ABaseMeleeWeapon>(ABaseMeleeWeapon::StaticClass(), GetActorLocation() + spawnadjust,
+			GetActorRotation(), SpawnParams);
+		//this->spawned_weapon_weakptr_weapon = MakeShareable(weapon);
+		
+		if (IsValid(weapon))
+		{
+			//weapon->AddToRoot();
+			//Point member
+			weapon->SetOwner(this);
+			this->spawned_weapon = weapon;
+			//this->spawned_weapon->AddToRoot();
+		}
+	
+		if (this->spawned_weapon)
+		{
+			weapon->InitWithItemInfo(iteminfo);
+			//spawned_weapon->SetLifeSpan(100000000.f);
+			this->EnemyLootTable->ThrowItem(weapon);
+			weapon->SetItemState(EItemState::EIS_InWorld);
+			weapon->ItemLevel = generated_rarity;
+			this->EnemyGameMode->SpawnedLoot.Add(weapon);
+			UE_LOG(LogTemp, Error, TEXT("Spawned Item__Weapon: %s"), *weapon->ItemDisplayName);
+		}*/
+	}
+	else if (iteminfo.ItemClass == EItemClass::IC_Readable)
+	{
+		//TODO
+	}
+	else
+	{
+		//Spawn item
+		return EItemClass::IC_Default;
+		/*AItem* item = this->GetWorld()->SpawnActor<AItem>(iteminfo.ItemSubClass, GetActorLocation() + spawnadjust,
+			GetActorRotation(), SpawnParams);
+		//	this->spawned_weapon_weakptr_item = MakeShareable(item);
+		if (IsValid(item))
+		{
+			//Point member
+			this->spawned_item = item;
+			//this->spawned_item->AddToRoot();
+		}
+		if (spawned_item)
+		{
+			spawned_item->InitWithItemInfo(iteminfo);
+			//spawned_item->SetLifeSpan(100000000.f); //Attempt to sett lifetime
+			this->EnemyLootTable->ThrowItem(spawned_item);
+			spawned_item->SetItemState(EItemState::EIS_InWorld); //Item state set to inworld, for pickups
+			spawned_item->ItemLevel = generated_rarity; //Set item level pseudo randomly
+			this->EnemyGameMode->SpawnedLoot.Add(spawned_item); //Add item to gamemode item array
+			UE_LOG(LogTemp, Error, TEXT("Spawned Item__Base: %s"), *spawned_item->ItemDisplayName); //debug log
+		}*/
+	}
+	return EItemClass::IC_Default;
+}
+
+
 
 void ABaseEnemy::EnemyAttack()
 {
