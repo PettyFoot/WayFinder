@@ -182,7 +182,7 @@ void AItem::AddedToInventory(AWayFinderCharacter* player)
 	}
 	else
 	{
-		//this->Destroy();
+		this->Destroy();
 	}
 	
 }

@@ -95,15 +95,14 @@ void ABaseEnemy::BeginPlay()
 	this->EventEnableCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ABaseEnemy::OverlappedEventCollisionBox);
 	this->EventEnableCollisionBox->OnComponentEndOverlap.AddDynamic(this, &ABaseEnemy::EndOverlapEventCollisionsBox);
 
-	//this->StartBehaviorTree();
+	this->StartBehaviorTree();
 
 	this->EnemyGameMode = Cast<AWayFinderGameMode>(GetWorld()->GetAuthGameMode());
 	if (EnemyGameMode)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Found game mode on ememy"));
 	}
-	this->test = false;
-	this->test2 = false;
+	
 
 	this->SpawnDefaultMeleeWeapon();
 
@@ -137,88 +136,6 @@ void ABaseEnemy::EndOverlapEventCollisionsBox(UPrimitiveComponent* OverlappedCom
 void ABaseEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	if (IsValid(this->spawned_consumable))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("spawned Consume"));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("NOOOOOOOOOOOOO Consume"));
-	}
-
-	if (!this->test)
-	{
-		if (IsValid(this->spawned_weapon))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("spawned Weapon"));
-			this->test = true;
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("NOOOOOOOOOOOOO WEAPON"));
-
-		}
-	}
-	else
-	{
-		if (IsValid(this->spawned_weapon))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("spawned Weapon"));
-			this->test = true;
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("NOOOOOOOOOOOOO WEAPON"));
-
-		}
-
-	}
-
-	if (IsValid(this->spawned_item))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("spawned item"));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("NOOOOOOOOOOOOO item"));
-	}
-
-	if (!this->test)
-	{
-		if (this->spawned_weapon)
-		{
-			this->test = true;
-			UE_LOG(LogTemp, Warning, TEXT("spawned Weapon"));
-		}
-	}
-
-	if (this->test)
-	{
-		if (!this->spawned_weapon)
-		{
-			//weapon test
-			UE_LOG(LogTemp, Warning, TEXT("no weapon Weapon"));
-		}
-	}
-
-	if (!this->test2)
-	{
-		if (this->spawned_consumable)
-		{
-			this->test = true;
-			UE_LOG(LogTemp, Warning, TEXT("spawned consume"));
-		}
-	}
-
-	if (this->test2)
-	{
-		if (!this->spawned_consumable)
-		{
-			//Consumable test
-			UE_LOG(LogTemp, Warning, TEXT("no consume consume"));
-		}
-	}
 
 
 	if (this->AttackingPlayer)

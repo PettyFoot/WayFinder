@@ -10,6 +10,7 @@
 
 
 class AItem;
+class UBoxComponent;
 
 UENUM()
 enum class EWaveDifficulty : uint8
@@ -91,6 +92,8 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = "Loot")
 	TArray<AItem*> SpawnedLoot;
+
+
 
 //	UPROPERTY(VisibleAnywhere, Category = "Loot")
 	//TArray<AItem> SpawnedItemsPermanent;

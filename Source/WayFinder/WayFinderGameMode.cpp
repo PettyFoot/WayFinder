@@ -2,6 +2,7 @@
 
 #include "WayFinderGameMode.h"
 #include "BaseEnemy.h"
+#include "Components/BoxComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
@@ -30,6 +31,8 @@ AWayFinderGameMode::AWayFinderGameMode() :
 
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickInterval = 1.f;
+
+	
 }
 
 void AWayFinderGameMode::StartPlay()
@@ -37,8 +40,8 @@ void AWayFinderGameMode::StartPlay()
 	Super::StartPlay();
 			
 	//Tries to find an appropriate boss to set for level, in order to enable spawn events
-	this->FindBoss();
-	UE_LOG(LogTemp, Error, TEXT("Boss Set to: %s"), *this->BossEnemy->GetName());
+	//this->FindBoss();
+	//UE_LOG(LogTemp, Error, TEXT("Boss Set to: %s"), *this->BossEnemy->GetName());
 	
 
 }
