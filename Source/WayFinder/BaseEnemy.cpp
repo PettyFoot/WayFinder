@@ -231,8 +231,8 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 	else if (iteminfo.ItemClass == EItemClass::IC_Consumable)
 	{
 		//Spawn item
-		return EItemClass::IC_Consumable;
-	/*	AConsumable* consume = this->GetWorld()->SpawnActor<AConsumable>(AConsumable::StaticClass(), GetActorLocation() + spawnadjust,
+		
+		AConsumable* consume = this->GetWorld()->SpawnActor<AConsumable>(AConsumable::StaticClass(), GetActorLocation() + spawnadjust,
 			GetActorRotation(), SpawnParams);
 		//spawned_weapon_weakptr_consumable = MakeShareable(consume);
 		if (IsValid(consume))
@@ -254,7 +254,8 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 			consume->ItemLevel = generated_rarity;
 			this->EnemyGameMode->SpawnedLoot.Add(consume);
 			UE_LOG(LogTemp, Error, TEXT("Spawned Item__Consumable: %s"), *consume->ItemDisplayName);
-		}*/
+		}
+		return EItemClass::IC_Consumable;
 
 	}
 	else if (iteminfo.ItemClass == EItemClass::IC_QuestItem)
@@ -263,8 +264,8 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 	}
 	else if (iteminfo.ItemClass == EItemClass::IC_Weapon)
 	{
-		return EItemClass::IC_Weapon;
-		/*ABaseMeleeWeapon* weapon = this->GetWorld()->SpawnActor<ABaseMeleeWeapon>(ABaseMeleeWeapon::StaticClass(), GetActorLocation() + spawnadjust,
+		
+		ABaseMeleeWeapon* weapon = this->GetWorld()->SpawnActor<ABaseMeleeWeapon>(ABaseMeleeWeapon::StaticClass(), GetActorLocation() + spawnadjust,
 			GetActorRotation(), SpawnParams);
 		//this->spawned_weapon_weakptr_weapon = MakeShareable(weapon);
 		
@@ -286,7 +287,8 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 			weapon->ItemLevel = generated_rarity;
 			this->EnemyGameMode->SpawnedLoot.Add(weapon);
 			UE_LOG(LogTemp, Error, TEXT("Spawned Item__Weapon: %s"), *weapon->ItemDisplayName);
-		}*/
+		}
+		return EItemClass::IC_Weapon;
 	}
 	else if (iteminfo.ItemClass == EItemClass::IC_Readable)
 	{
@@ -295,8 +297,8 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 	else
 	{
 		//Spawn item
-		return EItemClass::IC_Default;
-		/*AItem* item = this->GetWorld()->SpawnActor<AItem>(iteminfo.ItemSubClass, GetActorLocation() + spawnadjust,
+		
+		AItem* item = this->GetWorld()->SpawnActor<AItem>(AItem::StaticClass(), GetActorLocation() + spawnadjust,
 			GetActorRotation(), SpawnParams);
 		//	this->spawned_weapon_weakptr_item = MakeShareable(item);
 		if (IsValid(item))
@@ -314,7 +316,8 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 			spawned_item->ItemLevel = generated_rarity; //Set item level pseudo randomly
 			this->EnemyGameMode->SpawnedLoot.Add(spawned_item); //Add item to gamemode item array
 			UE_LOG(LogTemp, Error, TEXT("Spawned Item__Base: %s"), *spawned_item->ItemDisplayName); //debug log
-		}*/
+		}
+		return EItemClass::IC_Default;
 	}
 	return EItemClass::IC_Default;
 }

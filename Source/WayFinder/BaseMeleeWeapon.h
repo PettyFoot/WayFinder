@@ -7,7 +7,6 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/DataTable.h"
 #include "GameFramework/Actor.h"
-#include "Item.h"
 #include "Weapon.h"
 #include "BaseMeleeWeapon.generated.h"
 
@@ -23,18 +22,6 @@ class USphereComponent;
 class UParticleSystem;
 class USoundCue;
 
-UENUM(BlueprintType)
-enum class EWeaponLevel : uint8
-{
-	WL_NoviceWeapon UMETA(DisplayName = "Novice"),
-	WL_ApprenticeWeapon UMETA(DisplayName = "Apprentice"),
-	WL_AdeptWeapon UMETA(DisplayName = "Adept"),
-	WL_MasterWeapon UMETA(DisplayName = "Master"),
-	WL_ExhaltedWeapon UMETA(DisplayName = "Exhalted"),
-	WL_LegendaryWeapon UMETA(DisplayName = "Legendary"),
-	WL_DefaultWeapon UMETA(DisplayName = "Default")
-	
-};
 
 USTRUCT(BlueprintType)
 struct FWeaponStats : public FTableRowBase
@@ -46,29 +33,24 @@ public:
 
 	//Base weapon damage
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		float DTBaseWeaponDamage;
+		float DTBaseWeaponDamageMultiplier;
 
 	//Adjustment to damage if critical strike is landed 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "1", ClampMax = "10"))
-		float DTCriticalDamageAdjustment;
+		float DTCriticalDamageMultiplier;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0", ClampMax = "1"))
-		float DTStartingWeaponDurability;
+	//smaller value makes weapon deteriorate slower
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = meta = (ClampMin = -0.08f, ClampMax = 0.08f))
+		float DTWeaponDurabilityLossRate;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		USkeletalMeshComponent* DTSkeletalWeaponMeshComponent;
+	//smaller value is less ult charge gain
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "-0.5", ClampMax = "1.5"))
+	float DTUltimateChargeGainRate;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float DTUltimateChargeMax;
+	//smaller value is less damage on ult (use 5 for mega impact? will have to play test this value)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0.5", ClampMax = "5"))
+	float DTUltChargeDamageMultiplier;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		float DTUltChargeDamage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UParticleSystem* DTImpactParticles;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UParticleSystem* DTUltAbilityParticles;
 
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	//	UStaticMeshComponent* DTStaticWeaponMeshComponent;
@@ -94,6 +76,8 @@ protected:
 	virtual void BeginPlay() override;
 
 	void InitWaveDataTable();
+
+	void UpdateWaveTableDate();
 
 public:	
 	// Called every frame
@@ -148,25 +132,6 @@ public:
 private:
 
 
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
-		UStaticMeshComponent* StaticWeaponMeshComponent;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
-	EWeaponLevel WeaponLevel;
-
-	//Base weapon damage
-	UPROPERTY(VisibleAnywhere, Category = "Weapon Stats")
-		float BaseWeaponDamage;
-
-	//Adjustment to damage if critical strike is landed 
-	UPROPERTY(VisibleAnywhere, Category = "Weapon Stats")
-		float CriticalDamageAdjustment;
-
-	//Starting durability of weapon
-	UPROPERTY(VisibleAnywhere, Category = "Weapon Stats")
-		float StartingWeaponDurability;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
 	UBoxComponent* WeaponCollisionBox;
 
@@ -179,7 +144,7 @@ private:
 	bool bIsWaitingToApplyDamage;
 
 	//HitResult to store hit result if target is enemy, could be used for player too
-	FHitResult OverlapHitReturn;
+	//FHitResult OverlapHitReturn;
 
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Stats")
 	bool bShouldCollide;
@@ -188,15 +153,11 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon FX", meta = (AllowPrivateAccess = "true"))
 		FName BoneNameWeaponImpact;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon FX", meta = (AllowPrivateAccess = "true"))
-		UParticleSystem* ImpactParticles;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon FX", meta = (AllowPrivateAccess = "true"))
-	UParticleSystem* UltAbilityParticles;
-
+	//Max ultimate charge
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Stats")
 	float UltimateChargeMax;
 
+	//Ultimate charge
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
 	float UltimateChargeCurrent;
 
@@ -205,14 +166,69 @@ private:
 
 	//Radius to apply ult effect within
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon FX", meta = (AllowPrivateAccess = "true"))
-		float UltChargeRadius;
+	float UltChargeRadius;
 
+	//Dmaage of ult
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Stats")
 	float UltChargeDamage;
 
+
+	//Area of effect to apply damage to enemies that are within bounds
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
 	USphereComponent* UltAbilityAOE;
 
+	//Initialized on spawn from FWeaponInfoStruct (Member Inside FItemInfoStruct)
+	//Weapon level (Comes from loot table RNG) Adjusts various stats and aspects of weapon interaction (See DT above)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
+	EWeaponLevel WeaponLevel;
+
+	//Base weapon damage 
+	//__effected by WeaponLevel
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
+	float BaseWeaponDamage;
+
+	//Adjustment to damage if critical strike is landed 
+	//__effected by WeaponLevel
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
+	float CriticalDamageAdjustment;
+
+	//Starting durability of weapon
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
+	float StartingWeaponDurability;
+
+	//Rate of weapon durability loss per use
+	//__effected by WeaponLevel
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
+	float DurabilityLossRate;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
+		float DurabilityLossPerUse;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Stats", meta=(AllowPrivateAccess = "true"))
+	float UltChargeRate;
+
+
+	//Particles to spawn on impact, should probably have different system to spawn particles based on impact surface type 
+	//TODO implement surface types and particle specificity to dif surface types
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon FX", meta = (AllowPrivateAccess = "true"))
+	UParticleSystem* ImpactParticles;
+
+	//Ult ability particles
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon FX", meta = (AllowPrivateAccess = "true"))
+	UParticleSystem* UltAbilityParticles;
+
+
+	/*
+	//Weapon STATIC mesh component
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
+		UStaticMeshComponent* StaticWeaponMeshComponent;
+
+	//skeletal weapon mesh (ensure this mesh has proper sockets needed by the rest of logic to spawn FX etc)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
+		USkeletalMesh* SkeletalWeaponMesh;*/
+	//Add montages of different attack combos and set from FItemInfoStruct upon spawn
+	//Once weapon is picked up player combo montages should be initialized from weapon's montage sections.
+	//This allows different weapon types to have different animations (cool!:))
 
 	/* TODO Add weapon type enum to allow the change of montage sections within the way finder character to enable multiple ability montages per weapon type */
 

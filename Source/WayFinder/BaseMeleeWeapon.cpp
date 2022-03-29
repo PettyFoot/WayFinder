@@ -21,30 +21,27 @@ ABaseMeleeWeapon::ABaseMeleeWeapon():
 	WeaponLevel(EWeaponLevel::WL_DefaultWeapon),
 	bIsWaitingToApplyDamage(false),
 	bShouldCollide(false),
-	UltimateChargeCurrent(0)
+	UltimateChargeCurrent(0),
+	BaseWeaponDamage(1.f),
+	CriticalDamageAdjustment(1.5f),
+	StartingWeaponDurability(100.f),
+	DurabilityLossRate(0.01f),
+	DurabilityLossPerUse(0.f)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-
+	//Set durability loss per use to this
+	this->DurabilityLossPerUse = this->StartingWeaponDurability * this->DurabilityLossRate;
 
 	//Create weapon collision box and attach to Skeletal weapon mesh component 
 	this->WeaponCollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("WeaponCollisionBox"));
 	this->WeaponCollisionBox->SetupAttachment(GetRootComponent());
-
-	this->WeaponCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	this->WeaponCollisionBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	this->WeaponCollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-	this->WeaponCollisionBox->SetGenerateOverlapEvents(true);
-	this->WeaponCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ABaseMeleeWeapon::OnWeaponOverlap);
+	//TODO may need to send in weapon collision box size with item spawn data to set collision box correctly
+	
 
 	this->UltAbilityAOE = CreateDefaultSubobject<USphereComponent>(TEXT("WeaponUltimateAbilityAOE"));
 	this->UltAbilityAOE->AttachTo(this->ItemSkeletalMeshComponent, FName("FX_ult"));
-	this->UltAbilityAOE->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	this->UltAbilityAOE->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	this->UltAbilityAOE->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-	this->UltAbilityAOE->SetGenerateOverlapEvents(true);
-	this->UltAbilityAOE->OnComponentBeginOverlap.AddDynamic(this, &ABaseMeleeWeapon::OnUltimateOverlap);
 
 	this->bReplicates = true;
 
@@ -62,6 +59,21 @@ void ABaseMeleeWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 	this->InitWaveDataTable();
+
+	//Ult Ability sphere collision set up
+	this->UltAbilityAOE->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	this->UltAbilityAOE->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	this->UltAbilityAOE->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	this->UltAbilityAOE->SetGenerateOverlapEvents(true);
+
+	//Weapon collision collision set up
+	this->WeaponCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	this->WeaponCollisionBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	this->WeaponCollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	this->WeaponCollisionBox->SetGenerateOverlapEvents(true);
+
+	this->WeaponCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ABaseMeleeWeapon::OnWeaponOverlap);
+	this->UltAbilityAOE->OnComponentBeginOverlap.AddDynamic(this, &ABaseMeleeWeapon::OnUltimateOverlap);
 }
 
 // Called every frame
@@ -74,6 +86,52 @@ void ABaseMeleeWeapon::Tick(float DeltaTime)
 void ABaseMeleeWeapon::InitWithItemInfo(FItemInfoStruct iteminfo)
 {
 	Super::InitWithItemInfo(iteminfo);
+
+	int32 WeaponLevel = FMath::RandRange(0, 6);
+	switch (WeaponLevel)
+	{
+	case 0:
+		this->WeaponLevel = EWeaponLevel::WL_NoviceWeapon;
+		break;
+	case 1:
+		this->WeaponLevel = EWeaponLevel::WL_ApprenticeWeapon;
+		break;
+	case 2:
+		this->WeaponLevel = EWeaponLevel::WL_AdeptWeapon;
+		break;
+	case 3:
+		this->WeaponLevel = EWeaponLevel::WL_MasterWeapon;
+		break;
+	case 4:
+		this->WeaponLevel = EWeaponLevel::WL_ExhaltedWeapon;
+		break;
+	case 5:
+		this->WeaponLevel = EWeaponLevel::WL_LegendaryWeapon;
+		break;
+	default:
+		this->WeaponLevel = EWeaponLevel::WL_DefaultWeapon;
+		break;
+	}
+
+	//Set initial stats
+	this->BaseWeaponDamage = iteminfo.WeaponInfoStruct.BaseWeaponDamage * this->ItemLevel; //Base damage times player level (Will have to balance this with player health, should do player health based off level)
+	this->CriticalDamageAdjustment = iteminfo.WeaponInfoStruct.CriticalDamageAdjustment;
+	this->StartingWeaponDurability = iteminfo.WeaponInfoStruct.StartingWeaponDurability;
+	this->DurabilityLossRate = iteminfo.WeaponInfoStruct.DurabilityLossRate;
+	this->UltChargeRate = iteminfo.WeaponInfoStruct.UltChargeRate;
+	this->DurabilityLossPerUse = this->StartingWeaponDurability * this->DurabilityLossRate;
+	this->ImpactParticles = iteminfo.WeaponInfoStruct.DTImpactParticles;
+	this->UltAbilityParticles = iteminfo.WeaponInfoStruct.DTUltAbilityParticles;
+
+	//This will update current weapon data from weapon level data table based on now current weapon level
+	//Will adjust various stats on the weapon
+	this->UpdateWaveTableDate();
+
+	//Call Data table which adjusts weapon stats based of set weapon level
+	// Novice = Worst --- Legendary = Best (Default is issue)
+	//TODO make default assert or make sure there is a weapon level set
+
+	
 }
 
 void ABaseMeleeWeapon::SetUltimateCharge(float adj_amount)
@@ -301,18 +359,80 @@ void ABaseMeleeWeapon::InitWaveDataTable()
 
 		if (rarity_row)
 		{
-			this->BaseWeaponDamage = rarity_row->DTBaseWeaponDamage;
-			this->CriticalDamageAdjustment = rarity_row->DTCriticalDamageAdjustment;
-			this->StartingWeaponDurability = rarity_row->DTStartingWeaponDurability;
-			this->UltimateChargeMax = rarity_row->DTUltimateChargeMax;
-			this->ImpactParticles = rarity_row->DTImpactParticles;
-			this->UltAbilityParticles = rarity_row->DTUltAbilityParticles;
-			this->UltChargeDamage = rarity_row->DTUltChargeDamage;
-			//this->StaticWeaponMeshComponent = rarity_row->DTStaticWeaponMeshComponent;
-			//this->SkeletalWeaponMeshComponent = rarity_row->DTSkeletalWeaponMeshComponent;
+			
 		}
 
 	}
 
+}
+
+void ABaseMeleeWeapon::UpdateWaveTableDate()
+{//Path to WaveStats data table 
+	FString wave_stats_dt_path(TEXT("DataTable'/Game/Game/DataTables/DT_WeaponStatsDataTable.DT_WeaponStatsDataTable'"));
+
+	UDataTable* dt_obj = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *wave_stats_dt_path));
+	if (dt_obj)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("data table found"));
+		FWeaponStats* rarity_row = nullptr;
+
+		switch (this->WeaponLevel)
+		{
+		case EWeaponLevel::WL_NoviceWeapon:
+			rarity_row = dt_obj->FindRow<FWeaponStats>(FName("Novice"), TEXT(""));
+			break;
+		case EWeaponLevel::WL_ApprenticeWeapon:
+			rarity_row = dt_obj->FindRow<FWeaponStats>(FName("Apprentice"), TEXT(""));
+			break;
+		case EWeaponLevel::WL_AdeptWeapon:
+			rarity_row = dt_obj->FindRow<FWeaponStats>(FName("Adept"), TEXT(""));
+			break;
+		case EWeaponLevel::WL_MasterWeapon:
+			rarity_row = dt_obj->FindRow<FWeaponStats>(FName("Master"), TEXT(""));
+			break;
+		case EWeaponLevel::WL_ExhaltedWeapon:
+			rarity_row = dt_obj->FindRow<FWeaponStats>(FName("Exhalted"), TEXT(""));
+			break;
+		case EWeaponLevel::WL_LegendaryWeapon:
+			rarity_row = dt_obj->FindRow<FWeaponStats>(FName("Legendary"), TEXT(""));
+			break;
+		case EWeaponLevel::WL_DefaultWeapon:
+			rarity_row = dt_obj->FindRow<FWeaponStats>(FName("Default"), TEXT(""));
+			break;
+		default:
+			break;
+		}
+
+		/*UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		float DTBaseWeaponDamageMultiplier;
+
+	//Adjustment to damage if critical strike is landed 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "1", ClampMax = "10"))
+		float DTCriticalDamageMultiplier;
+
+	//smaller value makes weapon deteriorate slower
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0", ClampMax = "1"))
+		float DTWeaponDurabilityLossRate;
+
+	//smaller value is less ult charge gain
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0.5", ClampMax = "2"))
+	float DTUltimateChargeGainRate;
+
+	//smaller value is less damage on ult (use 5 for mega impact? will have to play test this value)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0.5", ClampMax = "5"))
+	float DTUltChargeDamageMultiplier;*/
+
+		if (rarity_row)
+		{
+			this->BaseWeaponDamage *= rarity_row->DTBaseWeaponDamageMultiplier;
+			this->CriticalDamageAdjustment += rarity_row->DTCriticalDamageMultiplier;
+			this->DurabilityLossRate += rarity_row->DTWeaponDurabilityLossRate; 
+			this->UltChargeRate += rarity_row->DTUltimateChargeGainRate;
+			this->UltChargeDamage *= rarity_row->DTUltChargeDamageMultiplier;
+		
+
+		}
+
+	}
 }
 

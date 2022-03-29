@@ -15,6 +15,7 @@ class USkeletalMeshComponent;
 class UBoxComponent;
 class AWayFinderCharacter;
 class UItemInfo;
+struct FItemInfoStruct;
 
 
 
