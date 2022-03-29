@@ -107,6 +107,7 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerDoDamage(ABaseEnemy* enemy_target = nullptr);
 
+	UFUNCTION(BlueprintCallable)
 	void PlayerTakeDamage(float dmg_amount);
 
 	//Negative for reducing health
