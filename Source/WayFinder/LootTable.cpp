@@ -34,7 +34,7 @@ void ULootTable::InitRarityDropTableDT()
 {
 	if (!this->LootTableOwner) { return; } //No enemy don't do anything
 	//Path to WaveStats data table 
-	FString rarity_loottable_dt_path(TEXT("DataTable'/Game/Game/ItemDropChances_DT.ItemDropChances_DT'"));
+	FString rarity_loottable_dt_path(TEXT("DataTable'/Game/Game/DataTables/ItemDropChances_DT.ItemDropChances_DT'"));
 
 	UDataTable* dt_obj = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *rarity_loottable_dt_path));
 	if (dt_obj)
@@ -83,10 +83,10 @@ void ULootTable::SpawnLoot()
 	if (!this->LootTableOwner) { return; }
 	this->GenerateItemsToDrop();
 
-	//for (auto& info : this->ItemsToSpawn)
-	//{
-		//this->LootTableOwner->SpawnItem(&info);
-	//}
+	for (auto& info : this->ItemsToSpawn)
+	{
+		this->LootTableOwner->SpawnItem(info);
+	}
 	
 }
 

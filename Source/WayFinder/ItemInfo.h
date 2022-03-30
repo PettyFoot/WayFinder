@@ -95,7 +95,7 @@ public:
 
 	//Base weapon damage 
 	//__effected by WeaponLevel
-	UPROPERTY(EditDefaultsOnly, Category = "Weapon Stats")
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon Stats", meta = (ClampMin = 1.0f))
 		float BaseWeaponDamage;
 
 	//Adjustment to damage if critical strike is landed 
@@ -116,8 +116,16 @@ public:
 	//Rate of weapon durability loss per use
 	//__effected by WeaponLevel
 	// Starting durability * DurabilitLossRate = durability loss per use
-	UPROPERTY(EditDefaultsOnly, Category = "Weapon Stats", meta = (ClampMin = 0.005f, ClampMax = 0.1f))
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon Stats", meta = (ClampMin = 0.0001f, ClampMax = 0.001f))
 		float DurabilityLossRate;
+
+		//Radius to apply ult effect within
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon FX", meta = (ClampMin = 1.0f, ClampMax = 10.f))
+	float UltChargeRadius;
+
+	//Dmaage of ult
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon Stats", meta = (ClampMin = 1.0f, ClampMax = 20.f))
+	float UltChargeDamage;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon FX")
 		UParticleSystem* DTImpactParticles;
