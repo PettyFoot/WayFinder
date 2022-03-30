@@ -16,6 +16,7 @@
 #include "WayFinderHealthComponent.h"
 
 
+
 // Sets default values
 ABaseMeleeWeapon::ABaseMeleeWeapon():
 	WeaponLevel(EWeaponLevel::WL_DefaultWeapon),
@@ -26,7 +27,9 @@ ABaseMeleeWeapon::ABaseMeleeWeapon():
 	CriticalDamageAdjustment(1.5f),
 	StartingWeaponDurability(100.f),
 	DurabilityLossRate(0.01f),
-	DurabilityLossPerUse(0.f)
+	DurabilityLossPerUse(0.f),
+	UltChargeRadius(100.f),
+	UltChargeDamage(20.f)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -87,8 +90,8 @@ void ABaseMeleeWeapon::InitWithItemInfo(FItemInfoStruct iteminfo)
 {
 	Super::InitWithItemInfo(iteminfo);
 
-	int32 WeaponLevel = FMath::RandRange(0, 6);
-	switch (WeaponLevel)
+	int32 weapon_level = FMath::RandRange(0, 6);
+	switch (weapon_level)
 	{
 	case 0:
 		this->WeaponLevel = EWeaponLevel::WL_NoviceWeapon;
@@ -122,6 +125,9 @@ void ABaseMeleeWeapon::InitWithItemInfo(FItemInfoStruct iteminfo)
 	this->DurabilityLossPerUse = this->StartingWeaponDurability * this->DurabilityLossRate;
 	this->ImpactParticles = iteminfo.WeaponInfoStruct.DTImpactParticles;
 	this->UltAbilityParticles = iteminfo.WeaponInfoStruct.DTUltAbilityParticles;
+	this->UltChargeRadius = iteminfo.WeaponInfoStruct.UltChargeRadius;
+	this->UltChargeDamage = iteminfo.WeaponInfoStruct.UltChargeDamage;
+	
 
 	//This will update current weapon data from weapon level data table based on now current weapon level
 	//Will adjust various stats on the weapon
@@ -208,8 +214,17 @@ void ABaseMeleeWeapon::OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent,
 		if (enemy_hit)
 		{
 			//Gets this weapons base damage and adds to wielders weapon damage adjustments (buffs, consumable effect etc.)
-			float damage_amount = this->BaseWeaponDamage + enemy_hit->GetEnemyWeaponDamageAdjustments();
+			float crit_chance = FMath::RandRange(0, 100);
+			float damage_amount;
+			if (crit_chance < 50)
+			{
+				damage_amount = this->BaseWeaponDamage;
+			}
+			else
+			{
 
+				damage_amount = this->BaseWeaponDamage * this->CriticalDamageAdjustment;
+			}
 			//TODO Implement get surface type to spawn the corresponding fx (hit rock vs. hit flesh) ---- don't currently have many assets for this
 
 			//Get player to damage current health
@@ -235,9 +250,17 @@ void ABaseMeleeWeapon::OnWeaponOverlap(UPrimitiveComponent* OverlappedComponent,
 		AWayFinderCharacter* player_hit = Cast<AWayFinderCharacter>(OtherActor);
 		if (player_hit)
 		{
-			//Gets this weapons base damage and adds to wielders weapon damage adjustments (buffs, consumable effect etc.)
-			float damage_amount = this->BaseWeaponDamage + player_hit->GetPlayerWeaponWeaponAdjustments();
-
+			float crit_chance = FMath::RandRange(0, 100);
+			float damage_amount;
+			if (crit_chance < 50)
+			{
+				damage_amount = this->BaseWeaponDamage;
+			}
+			else
+			{
+				damage_amount = this->BaseWeaponDamage * this->CriticalDamageAdjustment;
+			}
+			
 			//TODO Implement get surface type to spawn the corresponding fx (hit rock vs. hit flesh) ---- don't currently have many assets for this
 
 			//Get player to damage current health
@@ -426,11 +449,11 @@ void ABaseMeleeWeapon::UpdateWaveTableDate()
 		{
 			this->BaseWeaponDamage *= rarity_row->DTBaseWeaponDamageMultiplier;
 			this->CriticalDamageAdjustment += rarity_row->DTCriticalDamageMultiplier;
-			this->DurabilityLossRate += rarity_row->DTWeaponDurabilityLossRate; 
+			this->DurabilityLossRate -= rarity_row->DTWeaponDurabilityLossRate; 
 			this->UltChargeRate += rarity_row->DTUltimateChargeGainRate;
 			this->UltChargeDamage *= rarity_row->DTUltChargeDamageMultiplier;
-		
 
+			this->DurabilityLossPerUse = this->StartingWeaponDurability * this->DurabilityLossRate;
 		}
 
 	}

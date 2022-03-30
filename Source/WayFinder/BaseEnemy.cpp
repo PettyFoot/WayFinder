@@ -218,9 +218,10 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 	FActorSpawnParameters SpawnParams = FActorSpawnParameters();
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-	float RandomSpawnPlacement = FMath::RandRange(50, 100);
+	float RandomSpawnPlacement = FMath::RandRange(50, 200);
+	float RandomSpawnPlacementtwo = FMath::RandRange(50, 200);
 
-	FVector spawnadjust(RandomSpawnPlacement, RandomSpawnPlacement, 150.f);
+	FVector spawnadjust(RandomSpawnPlacement, RandomSpawnPlacementtwo, 150.f);
 
 	int32 generated_rarity = FMath::RandRange(GetEnemyLevel() - 2, GetEnemyLevel() + 2);
 
@@ -280,11 +281,11 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 	
 		if (this->spawned_weapon)
 		{
+			weapon->ItemLevel = generated_rarity;
 			weapon->InitWithItemInfo(iteminfo);
 			//spawned_weapon->SetLifeSpan(100000000.f);
 			this->EnemyLootTable->ThrowItem(weapon);
 			weapon->SetItemState(EItemState::EIS_InWorld);
-			weapon->ItemLevel = generated_rarity;
 			this->EnemyGameMode->SpawnedLoot.Add(weapon);
 			UE_LOG(LogTemp, Error, TEXT("Spawned Item__Weapon: %s"), *weapon->ItemDisplayName);
 		}

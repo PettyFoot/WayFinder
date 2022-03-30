@@ -32,15 +32,15 @@ public:
 
 
 	//Base weapon damage
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "1", ClampMax = "2.5"))
 		float DTBaseWeaponDamageMultiplier;
 
 	//Adjustment to damage if critical strike is landed 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "1", ClampMax = "10"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0.0", ClampMax = "3"))
 		float DTCriticalDamageMultiplier;
 
 	//smaller value makes weapon deteriorate slower
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = meta = (ClampMin = -0.08f, ClampMax = 0.08f))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = -0.0008f, ClampMax = 0.0008f))
 		float DTWeaponDurabilityLossRate;
 
 	//smaller value is less ult charge gain

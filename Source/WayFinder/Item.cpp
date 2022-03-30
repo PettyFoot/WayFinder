@@ -97,7 +97,7 @@ void AItem::InitWithItemInfo(FItemInfoStruct iteminfo)
 	this->ItemMaxStack = iteminfo.ItemMaxStack;
 	this->InventorySlotIndex = iteminfo.InventorySlotIndex;
 	this->bCanBeStacked = iteminfo.bCanBeStacked;
-	this->ItemLevel = iteminfo.ItemLevel;
+	//this->ItemLevel = iteminfo.ItemLevel;
 
 }
 
