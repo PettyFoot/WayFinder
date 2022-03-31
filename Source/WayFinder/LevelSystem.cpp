@@ -3,6 +3,7 @@
 
 #include "LevelSystem.h"
 #include "BaseEnemy.h"
+#include "WayFinderHealthComponent.h"
 #include "WayFinderCharacter.h"
 
 
@@ -54,6 +55,10 @@ void ULevelSystem::SetLevelSystemOwner(ABaseEnemy* player_owner)
 void ULevelSystem::SetCurrentLevel(int32 level_to_set)
 {
 	this->CurrentLevel = level_to_set;
+
+	const float max_health = this->PlayerOwner->GetPlayerHealthComponent()->GetStartingHealth() * this->CurrentLevel;
+	this->PlayerOwner->GetPlayerHealthComponent()->SetMaxHealth(max_health);
+
 	this->CalculateExperienceNextLevel();
 }
 

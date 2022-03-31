@@ -73,6 +73,9 @@ AWayFinderCharacter::AWayFinderCharacter():
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	CharacterMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh"));
+	CharacterMesh->SetupAttachment(GetRootComponent());
+
 	//Init lives left to max lives, livesmax set in initializer list
 	this->LivesLeft = this->LivesMax;
 
@@ -239,10 +242,11 @@ void AWayFinderCharacter::BeginPlay()
 	//{
 		this->SpawnDefaultMeleeWeapon();
 		this->Inventory->SetPlayerOwner(this); //Set inventories owner
-		this->Inventory->InventoryCapacity = 10; //Inventory capacity
+		this->Inventory->InventoryCapacity = 20; //Inventory capacity
 		
 
 		this->PlayerLevelSystem->SetLevelSystemOwner(this);
+		this->PlayerHealthComponent->SetHealthComponentOwner(this);
 
 		float something_set = 0.5f;
 	//}
@@ -548,8 +552,12 @@ void AWayFinderCharacter::AttachItemToHand(AItem* item_to_attach)
 	const USkeletalMeshSocket* weapon_socket = GetMesh()->GetSocketByName(FName(TEXT("weapon_socket_r")));
 	if (weapon_socket)
 	{
+		FName name_of_socket(weapon_socket->GetName());
+
+		//const FAttachmentTransformRules  transformrules = FAttachmentTransformRules(FAttachmentTransformRules::SnapToTargetIncludingScale);
+		item_to_attach->AttachToComponent(this->CharacterMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 		//Attach weapon to weapon socket of main hand on player mesh
-		weapon_socket->AttachActor(item_to_attach, GetMesh());
+		//weapon_socket->AttachActor(item_to_attach, this->CharacterMesh);
 		item_to_attach->SetItemState(EItemState::EIS_Equipped);
 	}
 }

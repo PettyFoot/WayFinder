@@ -9,6 +9,7 @@
 class AWayFinderCharacter;
 class ABaseEnemy;
 
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class WAYFINDER_API ULevelSystem : public UActorComponent
 {

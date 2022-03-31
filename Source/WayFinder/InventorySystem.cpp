@@ -156,6 +156,8 @@ int32 UInventorySystem::RemoveItem(uint8 index, uint8 amount_to_remove)
 	return 0;
 }
 
+
+
 bool UInventorySystem::SplitItem(uint8 index)
 {
 	//Item does not exist or can't be stacked so don't split

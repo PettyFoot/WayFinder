@@ -6,6 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "WayFinderHealthComponent.generated.h"
 
+class AWayFinderCharacter;
+class ABaseEnemy;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class WAYFINDER_API UWayFinderHealthComponent : public UActorComponent
@@ -27,10 +29,13 @@ public:
 
 	FORCEINLINE float GetCurrentHealth() const { return this->CurrentHealth; }
 	FORCEINLINE float GetMaxHealth() const { return this->MaxHealth; }
+	FORCEINLINE float GetStartingHealth() const { return this->StartingHealth; }
 
 	FORCEINLINE void SetCurrentHealth(float health_adjustment) { this->CurrentHealth += health_adjustment; if (this->CurrentHealth > this->MaxHealth) { this->CurrentHealth = this->MaxHealth; } }
-	FORCEINLINE void SetMaxHealth(float max_health_adjustment)  { this->MaxHealth += max_health_adjustment; }
-
+	FORCEINLINE void SetMaxHealth(float max_health_adjustment) { this->MaxHealth += max_health_adjustment;  if (this->CurrentHealth > this->MaxHealth) { this->CurrentHealth = this->MaxHealth; } }
+	
+	void SetHealthComponentOwner(AWayFinderCharacter* owner);
+	void SetHealthComponentOwner(ABaseEnemy* owner);
 
 	void HealthTakeDamage(float Damage);
 
@@ -43,7 +48,13 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health Stats", meta = (AllowPrivateAccess = "True"))
 	float CurrentHealth;
 
-	AActor* OwningActor;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health Stats", meta = (AllowPrivateAccess = "True"))
+	float StartingHealth;
+
+	AWayFinderCharacter* PlayerOwner;
+	ABaseEnemy* EnemyOwner;
+
 
 	
 

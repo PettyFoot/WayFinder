@@ -2,36 +2,41 @@
 
 
 #include "WayFinderHealthComponent.h"
+#include "WayFinderCharacter.h"
 #include "BaseEnemy.h"
 
 // Sets default values for this component's properties
 UWayFinderHealthComponent::UWayFinderHealthComponent():
 	MaxHealth(100.f),
-	CurrentHealth(100.f)
+	CurrentHealth(100.f),
+	StartingHealth(14.f)
 {
 	
 	PrimaryComponentTick.bCanEverTick = false;
+	this->MaxHealth = this->StartingHealth;
 
 }
-
 
 // Called when the game starts
 void UWayFinderHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	this->OwningActor = GetOwner();
-	if (this->OwningActor)
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("owner of health component found initializing on takeanydamage"));
-		
-	}
-
+	this->MaxHealth = this->StartingHealth;
 	this->CurrentHealth = this->MaxHealth;
 	
 }
 
 
+
+void UWayFinderHealthComponent::SetHealthComponentOwner(AWayFinderCharacter* owner)
+{
+	this->PlayerOwner = owner;
+}
+
+void UWayFinderHealthComponent::SetHealthComponentOwner(ABaseEnemy* owner)
+{
+	this->EnemyOwner = owner;
+}
 
 void UWayFinderHealthComponent::HealthTakeDamage(float Damage)
 {

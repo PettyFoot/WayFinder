@@ -89,6 +89,8 @@ void ABaseEnemy::BeginPlay()
 { 
 	Super::BeginPlay();
 
+	this->EnemyHealthComponent->SetHealthComponentOwner(this);
+
 	this->EnemyController = Cast<ABaseEnemyControllerAI>(GetController());
 
 	//Subscribe OverlappedEventCollisionBox to eventcollisionbox's overlap events
@@ -247,12 +249,13 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 		//this->spawned_consumable->SetOwner(this->LootTableOwner);
 		if (spawned_consumable)
 		{
-			consume->InitWithItemInfo(iteminfo);
+			spawned_consumable->ItemLevel = generated_rarity;
+			spawned_consumable->InitWithItemInfo(iteminfo);
 			//spawned_consumable->SetLifeSpan(100000000.f);
 			//spawned_consumable->SetActorLocation(this->LootTableOwner->GetActorLocation());
-			this->EnemyLootTable->ThrowItem(consume);
-			consume->SetItemState(EItemState::EIS_InWorld);
-			consume->ItemLevel = generated_rarity;
+			this->EnemyLootTable->ThrowItem(spawned_consumable);
+			spawned_consumable->SetItemState(EItemState::EIS_InWorld);
+			
 			this->EnemyGameMode->SpawnedLoot.Add(consume);
 			UE_LOG(LogTemp, Error, TEXT("Spawned Item__Consumable: %s"), *consume->ItemDisplayName);
 		}

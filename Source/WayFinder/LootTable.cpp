@@ -85,6 +85,7 @@ void ULootTable::SpawnLoot()
 
 	for (auto& info : this->ItemsToSpawn)
 	{
+		//TOD
 		this->LootTableOwner->SpawnItem(info);
 	}
 	

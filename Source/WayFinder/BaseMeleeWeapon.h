@@ -98,6 +98,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetUltChargeMax() const { return this->UltimateChargeMax; }
 
+	FORCEINLINE void SetWeaponBaseDamage(float amount_to_adjust) { this->BaseWeaponDamage += amount_to_adjust; }
+	FORCEINLINE void SetUltChargeRate(float amount_to_adjust) { this->UltChargeRate += amount_to_adjust; }
+
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE UParticleSystem* GetUltParticles() const { return this->UltAbilityParticles; }
 

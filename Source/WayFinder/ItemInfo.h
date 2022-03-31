@@ -70,6 +70,28 @@ enum class EWeaponLevel : uint8
 
 };
 
+UENUM(BlueprintType)
+enum class EConsumableEffectType : uint8
+{
+
+	CET_Heal UMETA(DisplayName = "Heal"),
+	CET_CrowdControl UMETA(DisplayName = "Crowd Control"),
+	CET_Damage UMETA(DisplayName = "Damage"),
+	CET_Buff UMETA(DisplayName = "Buff")
+};
+
+UENUM(BlueprintType)
+enum class EBuffType : uint8
+{
+
+	BUFF_Fortify UMETA(DisplayName = "Fortify"), //Incease Health
+	BUFF_Swift UMETA(DisplayName = "Speed"), //Increase speed (this is a constant never to be set from loot spawn table randomness)
+	BUFF_Enrage UMETA(DisplayName = "Damage"), //Increase damage
+	BUFF_Invigorate UMETA(DisplayName = "Invigorate"), //Increase ult charge rate (this should be adjusted per item level, but only random item tier)
+	BUFF_Shield UMETA(DisplayName = "Shield"),//Increase Shield//Increase Shield
+	BUFF_Default UMETA(DisplayName = "Default") //No buff effect, make sure buff enum effect is set to enable effect!
+};
+
 
 UCLASS()
 class WAYFINDER_API UItemInfo : public UObject
@@ -78,6 +100,65 @@ class WAYFINDER_API UItemInfo : public UObject
 
 public:
 	UItemInfo();
+
+
+
+};
+
+
+
+USTRUCT(BlueprintType)
+struct FConsumableInfoStruct
+{
+	GENERATED_USTRUCT_BODY()
+
+public:
+
+	//Effect of consumable
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties")
+		EConsumableEffectType ConsumableEffectType;
+
+	//Effect of Buff
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties")
+		EBuffType ConsumableBuffType;
+
+	//If this consumable is EOT(Effect over time)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties")
+		bool bIsEOT;
+
+	// Other (Only set for health consumes right now)
+	//__ multiplier times item level: (baseeffectamount * itemlevel)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties", meta = (ClampMin = 0.5f, ClampMax = 5.f))
+		float BaseEffectAmount;
+
+	//Amount to add to players damage
+	//__ multiplier times item level: (enrageeffectamount * itemlevel) + baseweapondamage  = added damage
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties", meta = (ClampMin = 0.5f, ClampMax = 3.f))
+		float EnrageEffectAmount;
+
+	//Amount to add to ult charge gain
+	//__ smaller number is less ult charge rate buff
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties", meta = (ClampMin = 2.f, ClampMax = 5.f))
+		float InvigoreEffectAmount;
+
+	//Amount to add to player's max health;
+	// multiplier times item level: (fortifyeffectamount * itemlevel) + player max health
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties", meta = (ClampMin = 3.f, ClampMax = 10.f))
+		float FortifyEffectAmount;
+
+	//Number of uses total
+	//__1 by default means only 1 use of item anything more is multiple uses
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
+		uint8 NumberOfUsesTotal;
+
+	//Number of uses current/left
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
+		uint8 NumberOfUseLeft;
+
+	//total effect time of consumable
+	//__ seconds of effect time
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true", ClampMin = 1.f, ClampMax = 300.f))
+	float EffectDuration;
 
 };
 
@@ -197,6 +278,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	FWeaponInfoStruct WeaponInfoStruct;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	FConsumableInfoStruct ConsumableInfoStruct;
 };
 
 USTRUCT(BlueprintType)
@@ -209,7 +293,6 @@ public:
 		TMap<FString, FItemInfoStruct> LootA;
 
 };
-
 
 USTRUCT(BlueprintType)
 struct FLootTableTierByLevel
@@ -233,7 +316,6 @@ public:
 		TArray<FItemDataBaseItemMap> LootTable_TierE;
 
 };
-
 
 UCLASS(BlueprintType)
 class UItemDatabase : public UDataAsset
