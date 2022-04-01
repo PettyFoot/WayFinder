@@ -220,10 +220,10 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 	FActorSpawnParameters SpawnParams = FActorSpawnParameters();
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-	float RandomSpawnPlacement = FMath::RandRange(50, 200);
-	float RandomSpawnPlacementtwo = FMath::RandRange(50, 200);
+	float RandomSpawnPlacement = FMath::RandRange(-100, 100);
+	float RandomSpawnPlacementtwo = FMath::RandRange(-100, 100);
 
-	FVector spawnadjust(RandomSpawnPlacement, RandomSpawnPlacementtwo, 150.f);
+	FVector spawnadjust(RandomSpawnPlacement, RandomSpawnPlacementtwo, 0.f);
 
 	int32 generated_rarity = FMath::RandRange(GetEnemyLevel() - 2, GetEnemyLevel() + 2);
 
@@ -253,8 +253,10 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 			spawned_consumable->InitWithItemInfo(iteminfo);
 			//spawned_consumable->SetLifeSpan(100000000.f);
 			//spawned_consumable->SetActorLocation(this->LootTableOwner->GetActorLocation());
-			this->EnemyLootTable->ThrowItem(spawned_consumable);
-			spawned_consumable->SetItemState(EItemState::EIS_InWorld);
+			//this->EnemyLootTable->ThrowItem(spawned_consumable);
+
+			spawned_consumable->StartSpawnDropAnim(GetActorLocation() + spawnadjust); //plays "drop anim"
+			//spawned_consumable->SetItemState(EItemState::EIS_InWorld);
 			
 			this->EnemyGameMode->SpawnedLoot.Add(consume);
 			UE_LOG(LogTemp, Error, TEXT("Spawned Item__Consumable: %s"), *consume->ItemDisplayName);
@@ -287,8 +289,9 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 			weapon->ItemLevel = generated_rarity;
 			weapon->InitWithItemInfo(iteminfo);
 			//spawned_weapon->SetLifeSpan(100000000.f);
-			this->EnemyLootTable->ThrowItem(weapon);
-			weapon->SetItemState(EItemState::EIS_InWorld);
+			spawned_weapon->StartSpawnDropAnim(GetActorLocation() + spawnadjust); //plays "drop anim"
+			//this->EnemyLootTable->ThrowItem(weapon);
+			//weapon->SetItemState(EItemState::EIS_InWorld);
 			this->EnemyGameMode->SpawnedLoot.Add(weapon);
 			UE_LOG(LogTemp, Error, TEXT("Spawned Item__Weapon: %s"), *weapon->ItemDisplayName);
 		}
@@ -315,8 +318,9 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 		{
 			spawned_item->InitWithItemInfo(iteminfo);
 			//spawned_item->SetLifeSpan(100000000.f); //Attempt to sett lifetime
-			this->EnemyLootTable->ThrowItem(spawned_item);
-			spawned_item->SetItemState(EItemState::EIS_InWorld); //Item state set to inworld, for pickups
+			//this->EnemyLootTable->ThrowItem(spawned_item);
+			spawned_weapon->StartSpawnDropAnim(GetActorLocation() + spawnadjust); //plays "drop anim"
+			//spawned_item->SetItemState(EItemState::EIS_InWorld); //Item state set to inworld, for pickups
 			spawned_item->ItemLevel = generated_rarity; //Set item level pseudo randomly
 			this->EnemyGameMode->SpawnedLoot.Add(spawned_item); //Add item to gamemode item array
 			UE_LOG(LogTemp, Error, TEXT("Spawned Item__Base: %s"), *spawned_item->ItemDisplayName); //debug log

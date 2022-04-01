@@ -6,6 +6,8 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Curves/CurveFloat.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "WayFinder.h"
 #include "InventorySystem.h"
 #include "ItemInfo.h"
@@ -21,7 +23,11 @@ AItem::AItem():
 	ItemDescription(TEXT("Default Item Description")),
 	ItemCurrentStack(1),
 	ItemMaxStack(20),
-	bCanBeStacked(true)
+	bCanBeStacked(true),
+	SpawnDropTimerTime(0.9f),
+	SpawnDropLocationTarget(FVector(0.f)),
+	SpawnDropStartLocation(FVector(0.f)),
+	bIsSpawningDrop(false)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -99,6 +105,10 @@ void AItem::InitWithItemInfo(FItemInfoStruct iteminfo)
 	this->bCanBeStacked = iteminfo.bCanBeStacked;
 	//this->ItemLevel = iteminfo.ItemLevel;
 
+	this->SpawnDropCurve = iteminfo.SpawnDropCurve;
+	this->SpawnDropCurve_Y = iteminfo.SpawnDropCurve_Y;
+	this->SpawnDropLocationTarget = iteminfo.SpawnDropLocationTarget;
+
 }
 
 // Called when the game starts or when spawned
@@ -124,6 +134,8 @@ void AItem::BeginPlay()
 
 	this->ItemTraceEnableSphere->OnComponentBeginOverlap.AddDynamic(this, &AItem::ItemBeingOverlapped);
 	this->ItemTraceEnableSphere->OnComponentEndOverlap.AddDynamic(this, &AItem::ItemEndOverlap);
+
+
 
 	//called to set item's initial state to be in world (overridden by spawn defualt weapon in player class)
 	this->SetItemState(EItemState::EIS_InWorld);
@@ -165,6 +177,55 @@ void AItem::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (this->bIsSpawningDrop) { this->SpawnDropItem(DeltaTime); }
+
+}
+
+void AItem::StartSpawnDropAnim(FVector start_location)
+{
+	this->bIsSpawningDrop = true;
+
+	this->SpawnDropStartLocation = start_location;
+	GetWorldTimerManager().SetTimer(this->SpawnDropTimerHandle, this, &AItem::EndSpawnDrop, this->SpawnDropTimerTime);
+
+}
+
+void AItem::EndSpawnDrop()
+{
+	this->bIsSpawningDrop = false;
+	this->SetItemState(EItemState::EIS_InWorld);
+}
+
+void AItem::SpawnDropItem(float DeltaTime)
+{
+	if (!this->bIsSpawningDrop) { return; }
+	if (this->SpawnDropCurve && this->SpawnDropCurve_Y)
+	{
+
+		float range_Z = FMath::RandRange(120, 160);
+		float range_X = FMath::RandRange(70, 95);
+		float range_Y = FMath::RandRange(70, 95);
+		const float elapsed_time = GetWorldTimerManager().GetTimerElapsed(this->SpawnDropTimerHandle); //our timers current time
+		const float curve_val = this->SpawnDropCurve->GetFloatValue(elapsed_time); //get curves return value for passed in time
+		const float curve_val_y = this->SpawnDropCurve_Y->GetFloatValue(elapsed_time); //get curves return value for passed in time
+		
+
+		FVector item_loc = this->SpawnDropStartLocation - FVector(0.f, 0.f, 30.f);
+		const FVector target_loc = this->GetActorLocation() + FVector(range_X, range_Y, range_Z);
+
+		const FVector item_camera(FVector(0.f, 0.f, (target_loc - item_loc).Z));
+		const FVector item_camera_y(FVector(0.f, (target_loc - item_loc).Y, 0.f));
+		const FVector item_camera_x(FVector((target_loc - item_loc).X, 0.f, 0.f));
+		
+		const float delta_z = item_camera.Size(); //Scale factor of curve to game world item
+		const float delta_y = item_camera_y.Size(); //Scale factor of curve to game world item
+		const float delta_x = item_camera_x.Size();
+
+		item_loc.Z += curve_val * delta_z;
+		item_loc.Y += (curve_val_y) * delta_y;
+		item_loc.X += (curve_val_y) * delta_x;
+		SetActorLocation(item_loc, true, nullptr, ETeleportType::TeleportPhysics);
+	}
 }
 
 void AItem::UseItem(AWayFinderCharacter* player)

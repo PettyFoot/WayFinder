@@ -145,9 +145,37 @@ public:
 	class UInventorySystem* OwningInventory;
 
 	//Used to set certain aspects of the item's capabilities
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties")
 	int32 ItemLevel;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties")
+	FVector SpawnDropStartLocation;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties")
+	FVector SpawnDropLocationTarget;
+
+	FTimerHandle SpawnDropTimerHandle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties")
+	float SpawnDropTimerTime;
+
+	bool bIsSpawningDrop;
+
+	void StartSpawnDropAnim(FVector start_location);
+
+	void EndSpawnDrop();
+
+	private:
+
+		
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	class UCurveFloat* SpawnDropCurve;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	UCurveFloat* SpawnDropCurve_Y;
+
+
+	void SpawnDropItem(float DeltaTime);
 
 public:
 

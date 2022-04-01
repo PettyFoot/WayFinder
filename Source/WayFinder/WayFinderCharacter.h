@@ -279,8 +279,8 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Inventory", meta = (AllowPrivateAccess = "true"))
 	ULevelSystem* PlayerLevelSystem;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats", meta = (AllowPrivateAccess = "true"))
-	USkeletalMeshComponent* CharacterMesh;
+//	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats", meta = (AllowPrivateAccess = "true"))
+	//USkeletalMeshComponent* CharacterMesh;
 	
 
 private:
