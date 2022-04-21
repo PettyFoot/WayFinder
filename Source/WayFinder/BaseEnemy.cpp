@@ -2,6 +2,7 @@
 
 
 #include "BaseEnemy.h"
+#include "BaseMeleeWeapon.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "BaseMeleeWeapon.h"
@@ -9,21 +10,20 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h" 
+#include "Consumable.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Item.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "LootTable.h"
 #include "LevelSystem.h"
-#include "Item.h"
-#include "Consumable.h"
-#include "BaseMeleeWeapon.h"
-#include "Weapon.h"
-
 #include "Particles/ParticleSystem.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "SpawnerBase.h"
 #include "WayFinderHealthComponent.h"
 #include "WayFinderCharacter.h"
 #include "WayFinderGameMode.h"
+#include "Weapon.h"
 
 ABaseEnemy::ABaseEnemy():
 	PatrolPointOne(FVector(0.f)),
@@ -223,7 +223,7 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 	float RandomSpawnPlacement = FMath::RandRange(-100, 100);
 	float RandomSpawnPlacementtwo = FMath::RandRange(-100, 100);
 
-	FVector spawnadjust(RandomSpawnPlacement, RandomSpawnPlacementtwo, 0.f);
+	FVector spawnadjust(0.f, 0.f, -25.f);
 
 	int32 generated_rarity = FMath::RandRange(GetEnemyLevel() - 2, GetEnemyLevel() + 2);
 
@@ -255,7 +255,7 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 			//spawned_consumable->SetActorLocation(this->LootTableOwner->GetActorLocation());
 			//this->EnemyLootTable->ThrowItem(spawned_consumable);
 
-			spawned_consumable->StartSpawnDropAnim(GetActorLocation() + spawnadjust); //plays "drop anim"
+			spawned_consumable->StartSpawnDropAnim(GetActorLocation() ); //plays "drop anim"
 			//spawned_consumable->SetItemState(EItemState::EIS_InWorld);
 			
 			this->EnemyGameMode->SpawnedLoot.Add(consume);
@@ -289,7 +289,7 @@ EItemClass ABaseEnemy::SpawnItem(FItemInfoStruct iteminfo)
 			weapon->ItemLevel = generated_rarity;
 			weapon->InitWithItemInfo(iteminfo);
 			//spawned_weapon->SetLifeSpan(100000000.f);
-			spawned_weapon->StartSpawnDropAnim(GetActorLocation() + spawnadjust); //plays "drop anim"
+			spawned_weapon->StartSpawnDropAnim(GetActorLocation()); //plays "drop anim"
 			//this->EnemyLootTable->ThrowItem(weapon);
 			//weapon->SetItemState(EItemState::EIS_InWorld);
 			this->EnemyGameMode->SpawnedLoot.Add(weapon);

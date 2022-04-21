@@ -34,6 +34,8 @@ void AWeapon::Tick(float DeltaTime)
 
 void AWeapon::InitWithItemInfo(FItemInfoStruct iteminfo)
 {
+	this->WeaponClass = iteminfo.WeaponInfoStruct.WeaponClass; //May need to move to AITEM parent call
+	
 	Super::InitWithItemInfo(iteminfo);
 }
 

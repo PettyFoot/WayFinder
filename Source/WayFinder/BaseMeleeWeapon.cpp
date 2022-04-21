@@ -44,7 +44,7 @@ ABaseMeleeWeapon::ABaseMeleeWeapon():
 	
 
 	this->UltAbilityAOE = CreateDefaultSubobject<USphereComponent>(TEXT("WeaponUltimateAbilityAOE"));
-	this->UltAbilityAOE->AttachTo(this->ItemSkeletalMeshComponent, FName("FX_ult"));
+	this->UltAbilityAOE->AttachTo(GetRootComponent(), FName("FX_ult"));
 
 	this->bReplicates = true;
 
@@ -61,19 +61,21 @@ void ABaseMeleeWeapon::OnConstruction(const FTransform& Transform)
 void ABaseMeleeWeapon::BeginPlay()
 {
 	Super::BeginPlay();
-	this->InitWaveDataTable();
+	//this->InitWaveDataTable();
 
 	//Ult Ability sphere collision set up
+	this->UltAbilityAOE->SetGenerateOverlapEvents(true);
 	this->UltAbilityAOE->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	this->UltAbilityAOE->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	this->UltAbilityAOE->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-	this->UltAbilityAOE->SetGenerateOverlapEvents(true);
+	
 
 	//Weapon collision collision set up
+	this->WeaponCollisionBox->SetGenerateOverlapEvents(true);
 	this->WeaponCollisionBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	this->WeaponCollisionBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	this->WeaponCollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-	this->WeaponCollisionBox->SetGenerateOverlapEvents(true);
+
 
 	this->WeaponCollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ABaseMeleeWeapon::OnWeaponOverlap);
 	this->UltAbilityAOE->OnComponentBeginOverlap.AddDynamic(this, &ABaseMeleeWeapon::OnUltimateOverlap);
@@ -90,7 +92,7 @@ void ABaseMeleeWeapon::InitWithItemInfo(FItemInfoStruct iteminfo)
 {
 	Super::InitWithItemInfo(iteminfo);
 
-	int32 weapon_level = FMath::RandRange(0, 6);
+	int32 weapon_level = FMath::RandRange(0, 6); //This needs to be updated to be more RNG compliable
 	switch (weapon_level)
 	{
 	case 0:
@@ -127,6 +129,7 @@ void ABaseMeleeWeapon::InitWithItemInfo(FItemInfoStruct iteminfo)
 	this->UltAbilityParticles = iteminfo.WeaponInfoStruct.DTUltAbilityParticles;
 	this->UltChargeRadius = iteminfo.WeaponInfoStruct.UltChargeRadius;
 	this->UltChargeDamage = iteminfo.WeaponInfoStruct.UltChargeDamage;
+
 	
 
 	//This will update current weapon data from weapon level data table based on now current weapon level

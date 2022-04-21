@@ -9,6 +9,7 @@
 #include "Engine/DataTable.h"
 #include "Engine/DataAsset.h"
 #include "Particles/ParticleSystem.h"
+#include "ItemInfoEnums.h"
 #include "ItemInfo.generated.h"
 
 
@@ -18,81 +19,6 @@
  */
 
 
-
-UENUM(BlueprintType)
-enum class EItemClass : uint8
-{
-	IC_Weapon UMETA(DisplayName = "Weapon"),
-	IC_Consumable UMETA(DisplayName = "Consumable"),
-	IC_Armor UMETA(DisplayName = "Armor"),
-	IC_QuestItem UMETA(DisplayName = "Quest Item"),
-	IC_Readable UMETA(DisplayName = "Readable"),
-	IC_Default  UMETA(DisplayName = "Default")
-
-};
-
-
-//Used to seperate item info within the datasset list
-UENUM(BlueprintType)
-enum class ELootTableLevelBounds : uint8
-{
-	ELTLB_One_Twenty UMETA(DisplayName = "1-20"),
-	ELTLB_TwentyOne_Thirty UMETA(DisplayName = "21-30"),
-	ELTLB_ThirtyOne_Fourty UMETA(DisplayName = "31-40"),
-	ELTLB_FourtyOne_Fifty UMETA(DisplayName = "41-50"),
-	ELTLB_FiftyOne_Sixty UMETA(DisplayName = "51-60"),
-	ELTLB_Default UMETA(DisplayName = "Default")
-
-};
-UENUM(BlueprintType)
-enum class ELootTier : uint8
-{
-	ELTLB_TierA UMETA(DisplayName = "Tier A"),
-	ELTLB_TierB UMETA(DisplayName = "Tier B"),
-	ELTLB_TierC UMETA(DisplayName = "Tier C"),
-	ELTLB_TierD UMETA(DisplayName = "Tier D"),
-	ELTLB_TierE UMETA(DisplayName = "Tier E"),
-	ELTLB_TierDefault UMETA(DisplayName = "Tier Default")
-	
-
-};
-
-UENUM(BlueprintType)
-enum class EWeaponLevel : uint8
-{
-	WL_NoviceWeapon UMETA(DisplayName = "Novice"),
-	WL_ApprenticeWeapon UMETA(DisplayName = "Apprentice"),
-	WL_AdeptWeapon UMETA(DisplayName = "Adept"),
-	WL_MasterWeapon UMETA(DisplayName = "Master"),
-	WL_ExhaltedWeapon UMETA(DisplayName = "Exhalted"),
-	WL_LegendaryWeapon UMETA(DisplayName = "Legendary"),
-	WL_DefaultWeapon UMETA(DisplayName = "Default")
-
-};
-
-UENUM(BlueprintType)
-enum class EConsumableEffectType : uint8
-{
-
-	CET_Heal UMETA(DisplayName = "Heal"),
-	CET_CrowdControl UMETA(DisplayName = "Crowd Control"),
-	CET_Damage UMETA(DisplayName = "Damage"),
-	CET_Buff UMETA(DisplayName = "Buff")
-};
-
-UENUM(BlueprintType)
-enum class EBuffType : uint8
-{
-
-	BUFF_Fortify UMETA(DisplayName = "Fortify"), //Incease Health
-	BUFF_Swift UMETA(DisplayName = "Speed"), //Increase speed (this is a constant never to be set from loot spawn table randomness)
-	BUFF_Enrage UMETA(DisplayName = "Damage"), //Increase damage
-	BUFF_Invigorate UMETA(DisplayName = "Invigorate"), //Increase ult charge rate (this should be adjusted per item level, but only random item tier)
-	BUFF_Shield UMETA(DisplayName = "Shield"),//Increase Shield//Increase Shield
-	BUFF_Default UMETA(DisplayName = "Default") //No buff effect, make sure buff enum effect is set to enable effect!
-};
-
-
 UCLASS()
 class WAYFINDER_API UItemInfo : public UObject
 {
@@ -100,11 +26,40 @@ class WAYFINDER_API UItemInfo : public UObject
 
 public:
 	UItemInfo();
-
-
-
 };
 
+USTRUCT(BlueprintType)
+struct FConsumableType
+{
+	GENERATED_USTRUCT_BODY()
+
+		//Set if this item should be a potion Consumable
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties") //0
+	EPotionType PotionType = EPotionType::PT_Default;
+
+	//Set if this item should be a FoodDrink Consumable
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties") //1
+		EFoodDrinkType FoodDrink = EFoodDrinkType::FD_Default;
+
+	//Set if this item should be a Buff consumable
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties") //2
+		EBuffType ConsumableBuffType = EBuffType::BUFF_Default;
+
+	//-1 if not set
+	int32 ConsumeableTypeIdx = -1;
+	int32 GetConsumableTypeIdx()
+	{
+		//Will not set idx if more than one enum is set (default is not set)
+		if (PotionType != EPotionType::PT_Default && ConsumeableTypeIdx == -1) { return ConsumeableTypeIdx = 0; }
+		else if (FoodDrink != EFoodDrinkType::FD_Default && ConsumeableTypeIdx == -1) { return ConsumeableTypeIdx = 1; }
+		else if (ConsumableBuffType != EBuffType::BUFF_Default && ConsumeableTypeIdx == -1) { return ConsumeableTypeIdx = 2; }
+		else
+		{
+			 return ConsumeableTypeIdx = -1;
+		}
+	}
+
+};
 
 
 USTRUCT(BlueprintType)
@@ -114,13 +69,13 @@ struct FConsumableInfoStruct
 
 public:
 
-	//Effect of consumable
+	//Effect of consumable__deprecated needs to be update and removed
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties")
-		EConsumableEffectType ConsumableEffectType;
+	EConsumableEffectType ConsumableEffectType;
 
-	//Effect of Buff
+	//struct to turn on or off certain effects of consumable
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties")
-		EBuffType ConsumableBuffType;
+	FConsumableType ConsumableType;
 
 	//If this consumable is EOT(Effect over time)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties")
@@ -162,6 +117,24 @@ public:
 
 };
 
+USTRUCT(BlueprintType)
+struct FWeaponType
+{
+	GENERATED_USTRUCT_BODY()
+
+	//Set if this item is a ranged weapon
+	//__Set to default if not using as ranged weapon
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties")
+	ERangedType RangedType = ERangedType::RT_Default;
+
+	//Set if this item is a melee weapon
+	//__Set to default if not using as melee weapon
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Consumable Properties")
+	EMeleeType MeleeType = EMeleeType::MT_Default;
+
+
+};
+
 USTRUCT (BlueprintType)
 struct FWeaponInfoStruct
 {
@@ -169,20 +142,28 @@ struct FWeaponInfoStruct
 
 public:
 
+	//class of weapon (ranged, melee)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
+	EWeaponClass WeaponClass;
+
+	//Type of weapon 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
+	FWeaponType WeaponType;
+
 	//To set weapon based on weapon DT (Look at BaseMeleeWeapon header __ FWeaponStats)
 	//TODO Add more rows in weapon level
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", meta = (AllowPrivateAccess = "true"))
-		EWeaponLevel WeaponLevel;
+	EWeaponLevel WeaponLevel;
 
 	//Base weapon damage 
 	//__effected by WeaponLevel
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon Stats", meta = (ClampMin = 1.0f))
-		float BaseWeaponDamage;
+	float BaseWeaponDamage;
 
 	//Adjustment to damage if critical strike is landed 
 	//__effected by WeaponLevel
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon FX", meta = (ClampMin = 1.5f, ClampMax = 5.f))
-		float CriticalDamageAdjustment;
+	float CriticalDamageAdjustment;
 
 	//Starting durability of weapon
 	//100 is default max
@@ -198,7 +179,7 @@ public:
 	//__effected by WeaponLevel
 	// Starting durability * DurabilitLossRate = durability loss per use
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon Stats", meta = (ClampMin = 0.0001f, ClampMax = 0.001f))
-		float DurabilityLossRate;
+	float DurabilityLossRate;
 
 		//Radius to apply ult effect within
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon FX", meta = (ClampMin = 1.0f, ClampMax = 10.f))
@@ -208,11 +189,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon Stats", meta = (ClampMin = 1.0f, ClampMax = 20.f))
 	float UltChargeDamage;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Weapon FX")
-		UParticleSystem* DTImpactParticles;
 
+	//TODO
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon FX")
-		UParticleSystem* DTUltAbilityParticles;
+	UParticleSystem* DTImpactParticles;
+
+	//TODO
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon FX")
+	UParticleSystem* DTUltAbilityParticles;
 		
 };
 
@@ -224,68 +208,102 @@ struct FItemInfoStruct
 	GENERATED_USTRUCT_BODY()
 
 public:
-	
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-		USkeletalMesh* ItemSkeletalMesh;
-
+	//Static Mesh
+	//__Root of all items
+	//_____General Item Info:
+	// There is a struct for the different item types (weapon, consumable, armor(TODO)) make sure to set the appropriate struct data based on item type
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 		UStaticMesh* ITemStaticMesh;
+
+	//SkeletalMesh
+	//__Use for weapon items
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+		USkeletalMesh* ItemSkeletalMesh;
 
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 		//USkeletalMeshComponent* ItemSkeletalMeshComponent;
 
+	//Item class (weapon, consumable, wearable, quest, readable)
+	//__Helps initialize items on spawn 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 		EItemClass ItemClass;
 
+	//TODO__Not used anywhere
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 		TSubclassOf<AItem> ItemSubClass;
 
+	//Name of Item
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 		FString ItemDisplayName;
 
+	//Item Description
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true", MultiLine = "true"))
 		FString ItemDescription;
 
+	//Use action text
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 		FString UseActionText;
 
+	//Thumbnail
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 		UTexture2D* ItemImage;
 
+	//Inventory weight
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true", ClampMin = 0.f))
 		float ItemWeight;
 
+	//true if item stackable
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 		bool bCanBeStacked;
 	
+	//Used in inventory to track how many of this items exist
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 		uint8 ItemCurrentStack;
 
+	//Max stack of item
+	// __ 1 by default and if not stackable
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-		uint8 ItemMaxStack;
+		uint8 ItemMaxStack = 1;
 	
 	//-1 if not inside an inventory (Default state!)
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
-		int32 InventorySlotIndex;
+		int32 InventorySlotIndex = -1;
 
 	//Used to set certain aspects of the item's capabilities
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 		int32 ItemLevel;
 
+	//TODO__This is not used anywhere. May deprecate this
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 		ELootTier LootTier;
 
-
+	//Curve for item drop animation
+	//__ X
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 		class UCurveFloat* SpawnDropCurve;
 
+	//Curve for item drop animation
+	//__ Y
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 		UCurveFloat* SpawnDropCurve_Y;
 
+	//Location of item drop __ helps assist animation
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties")
 		FVector SpawnDropLocationTarget;
 
+	//Size of pickup box area
+	//__Use a test bp item and mesh to get size right
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties")
+	FVector PickupCollisionBoxExtent;
+
+	//offset of pickup box area
+	//__Use a test bp item and mesh to get size right
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties")
+	FVector PickupCollisionBoxOffset;
+
+	//Weapon Item info struct
+	//__Set stuff if item should be a weapon
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	FWeaponInfoStruct WeaponInfoStruct;
 

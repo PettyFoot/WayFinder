@@ -59,10 +59,15 @@ AItem::AItem():
 	this->ItemTraceEnableSphere->SetSphereRadius(320.f);
 	//
 
+
+
 	//Box collision for player pick up capabilities
 	this->ItemPickupInteractArea = CreateDefaultSubobject<UBoxComponent>(TEXT("ItemPickupInteractArea"));
 	this->ItemPickupInteractArea->SetupAttachment(GetRootComponent());
-	
+
+
+	//this->ItemPickupInteractArea->Bounds.BoxExtent = 
+
 
 	//this->ItemTraceEnableSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 
@@ -108,6 +113,17 @@ void AItem::InitWithItemInfo(FItemInfoStruct iteminfo)
 	this->SpawnDropCurve = iteminfo.SpawnDropCurve;
 	this->SpawnDropCurve_Y = iteminfo.SpawnDropCurve_Y;
 	this->SpawnDropLocationTarget = iteminfo.SpawnDropLocationTarget;
+	this->PickupCollisionBoxExtent = iteminfo.PickupCollisionBoxExtent;
+	this->PickupCollisionBoxOffset = iteminfo.PickupCollisionBoxOffset;
+
+	//Set pickup box collision area
+	this->ItemPickupInteractArea->SetBoxExtent(this->PickupCollisionBoxExtent);
+	this->ItemPickupInteractArea->SetRelativeLocation(this->PickupCollisionBoxOffset);
+
+	//Weapon Stuff
+	this->MeleeType = iteminfo.WeaponInfoStruct.WeaponType.MeleeType;
+
+	//Consumeable Stuff
 
 }
 
@@ -134,7 +150,6 @@ void AItem::BeginPlay()
 
 	this->ItemTraceEnableSphere->OnComponentBeginOverlap.AddDynamic(this, &AItem::ItemBeingOverlapped);
 	this->ItemTraceEnableSphere->OnComponentEndOverlap.AddDynamic(this, &AItem::ItemEndOverlap);
-
 
 
 	//called to set item's initial state to be in world (overridden by spawn defualt weapon in player class)
@@ -185,7 +200,25 @@ void AItem::StartSpawnDropAnim(FVector start_location)
 {
 	this->bIsSpawningDrop = true;
 
+	float range_Z = FMath::RandRange(120, 160);
+	float range_X = FMath::RandRange(-250, 250);
+	if (range_X < 100 && range_X > -100)
+	{
+		float range_xx = FMath::RandRange(100, 300);
+		range_X = range_xx;
+	}
+	float range_Y = FMath::RandRange(-250, 250);
+	if (range_Y < 100 && range_Y > -100)
+	{
+		float range_yy = FMath::RandRange(-300, -100);
+		range_Y = range_yy;
+	}
+
+	float range_spin = FMath::RandRange(0, 360);
+	FRotator spin = GetActorRotation() + FRotator(0.f, range_spin, 0.f);
 	this->SpawnDropStartLocation = start_location;
+	this->SpawnDropLocationTarget = GetActorLocation() + FVector(range_X, range_Y, range_Z);
+	SetActorRotation(spin);
 	GetWorldTimerManager().SetTimer(this->SpawnDropTimerHandle, this, &AItem::EndSpawnDrop, this->SpawnDropTimerTime);
 
 }
@@ -202,24 +235,34 @@ void AItem::SpawnDropItem(float DeltaTime)
 	if (this->SpawnDropCurve && this->SpawnDropCurve_Y)
 	{
 
-		float range_Z = FMath::RandRange(120, 160);
-		float range_X = FMath::RandRange(70, 95);
-		float range_Y = FMath::RandRange(70, 95);
 		const float elapsed_time = GetWorldTimerManager().GetTimerElapsed(this->SpawnDropTimerHandle); //our timers current time
 		const float curve_val = this->SpawnDropCurve->GetFloatValue(elapsed_time); //get curves return value for passed in time
 		const float curve_val_y = this->SpawnDropCurve_Y->GetFloatValue(elapsed_time); //get curves return value for passed in time
 		
 
-		FVector item_loc = this->SpawnDropStartLocation - FVector(0.f, 0.f, 30.f);
-		const FVector target_loc = this->GetActorLocation() + FVector(range_X, range_Y, range_Z);
+		FVector item_loc = this->SpawnDropStartLocation;
+		const FVector target_loc = this->SpawnDropLocationTarget;
 
 		const FVector item_camera(FVector(0.f, 0.f, (target_loc - item_loc).Z));
 		const FVector item_camera_y(FVector(0.f, (target_loc - item_loc).Y, 0.f));
 		const FVector item_camera_x(FVector((target_loc - item_loc).X, 0.f, 0.f));
 		
-		const float delta_z = item_camera.Size(); //Scale factor of curve to game world item
-		const float delta_y = item_camera_y.Size(); //Scale factor of curve to game world item
-		const float delta_x = item_camera_x.Size();
+		
+		float delta_z = item_camera.Size(); //Scale factor of curve to game world item
+		float delta_y = item_camera_y.Size(); //Scale factor of curve to game world item
+		float delta_x = item_camera_x.Size();
+		if (item_camera.Z < 0)
+		{
+			delta_z = -delta_z;
+		}
+		if (item_camera_y.Y < 0)
+		{
+			delta_y = -delta_y;
+		}
+		if (item_camera_x.X < 0)
+		{
+			delta_x = -delta_x;
+		}
 
 		item_loc.Z += curve_val * delta_z;
 		item_loc.Y += (curve_val_y) * delta_y;
@@ -230,6 +273,7 @@ void AItem::SpawnDropItem(float DeltaTime)
 
 void AItem::UseItem(AWayFinderCharacter* player)
 {
+	
 }
 
 void AItem::AddedToInventory(AWayFinderCharacter* player)

@@ -42,7 +42,8 @@ AWayFinderCharacter::AWayFinderCharacter():
 	PlayerCombatStateTimerTime(5.f),
 	NumItemsOverlapping(0),
 	InventoryCapacity(10),
-	bShouldTraceForItems(false)
+	bShouldTraceForItems(false),
+	bIsInvuln(false)
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -79,11 +80,13 @@ AWayFinderCharacter::AWayFinderCharacter():
 	//Init lives left to max lives, livesmax set in initializer list
 	this->LivesLeft = this->LivesMax;
 
-	PlayerHealthComponent = CreateDefaultSubobject<UWayFinderHealthComponent>(TEXT("HealthComponent"));
+	//Health component creation
+	this->PlayerHealthComponent = CreateDefaultSubobject<UWayFinderHealthComponent>(TEXT("HealthComponent"));
 
+	//Player inventory component creation
 	this->Inventory = CreateDefaultSubobject<UInventorySystem>(TEXT("Inventory"));
-	//this->Inventory->Owner
 
+	//Player level system component creation 
 	this->PlayerLevelSystem = CreateDefaultSubobject<ULevelSystem>(TEXT("PlayerLevel"));
 
 	
@@ -125,6 +128,7 @@ void AWayFinderCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 
 }
 
+//Fun input action to allow z axis movement
 void AWayFinderCharacter::ToggleFly()
 {
 	if (this->GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Flying)
@@ -140,6 +144,7 @@ void AWayFinderCharacter::ToggleFly()
 	
 }
 
+//Input axis adjustment for z axis movement (animation still does walking, this is just for gags)
 void AWayFinderCharacter::MoveUp(float Value)
 {
 	if (this->bIsAbleToFly)
@@ -199,6 +204,7 @@ void AWayFinderCharacter::LookUpAtRate(float Rate)
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 }
 
+//Zoom function to allow user to zoom FOV of player camera
 void AWayFinderCharacter::ZoomEnabled(float value)
 {
 	//FollowCamera
@@ -249,6 +255,8 @@ void AWayFinderCharacter::BeginPlay()
 		this->PlayerHealthComponent->SetHealthComponentOwner(this);
 
 		float something_set = 0.5f;
+
+		this->WFPlayerState = EPlayerState::PS_Idle;
 	//}
 
 
@@ -543,6 +551,7 @@ void AWayFinderCharacter::EquipItem(AItem* item_to_equip)
 			this->AttachItemToHand(this->PlayerEquippedMeleeWeapon);
 		}
 	}
+	
 	//non melee type ADD these
 }
 
@@ -552,12 +561,10 @@ void AWayFinderCharacter::AttachItemToHand(AItem* item_to_attach)
 	const USkeletalMeshSocket* weapon_socket = GetMesh()->GetSocketByName(FName(TEXT("weapon_socket_r")));
 	if (weapon_socket)
 	{
-		FName name_of_socket(weapon_socket->GetName());
+		//FName name_of_socket(weapon_socket->GetName());
 		FAttachmentTransformRules rules = FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true);
 		//const FAttachmentTransformRules  transformrules = FAttachmentTransformRules(FAttachmentTransformRules::SnapToTargetIncludingScale);
 		item_to_attach->AttachToComponent(GetMesh(), rules, FName(TEXT("weapon_socket_r")));
-		//Attach weapon to weapon socket of main hand on player mesh
-		//weapon_socket->AttachActor(item_to_attach, this->CharacterMesh);
 		item_to_attach->SetItemState(EItemState::EIS_Equipped);
 	}
 }
@@ -692,21 +699,21 @@ float AWayFinderCharacter::GetPlayerWeaponWeaponAdjustments()
 
 void AWayFinderCharacter::PlayerTakeDamage(float dmg_amount)
 {
-	if (this->bIsInvuln) { return; }
-
-	if (HasAuthority())
-	{
-		if (this->PlayerHealthComponent)
-		{
-			this->WFPlayerState = EPlayerState::PS_Combat;
+	if (this->bIsInvuln) { UE_LOG(LogTemp, Error, TEXT("Took damageeeeeeeeeeeeeeeee")); return; }
+	UE_LOG(LogTemp, Error, TEXT("Took damage"));
+	//if (HasAuthority())
+	//{
+		//if (this->PlayerHealthComponent)
+		//{
+			//this->WFPlayerState = EPlayerState::PS_Combat;
 			this->PlayerHealthComponent->HealthTakeDamage(dmg_amount);
-		}
+		//}
 
-	}
-	else
-	{
-		this->ServerPlayerTakeDamage(dmg_amount);
-	}
+	//}
+	//else
+	//{
+	//	this->ServerPlayerTakeDamage(dmg_amount);
+	//}
 	
 }
 

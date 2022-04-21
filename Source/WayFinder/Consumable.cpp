@@ -14,7 +14,6 @@ AConsumable::AConsumable():
 	TotalEffectDone(0.f),
 	DestroyOnComplete(false),
 	Started(false),
-	ConsumableBuffType(EBuffType::BUFF_Default),
 	NumberOfUsesTotal(1),
 	NumberOfUseLeft(1),
 	EffectDuration(1.f)
@@ -36,24 +35,27 @@ void AConsumable::InitWithItemInfo(FItemInfoStruct iteminfo)
 {
 	Super::InitWithItemInfo(iteminfo);
 
-	this->ConsumableEffectType = iteminfo.ConsumableInfoStruct.ConsumableEffectType;
+	this->ConsumableEffectType = iteminfo.ConsumableInfoStruct.ConsumableEffectType; //This may not work and need to be moved to AItem parent call (InitWithItemInfo())
 	bIsEOT = iteminfo.ConsumableInfoStruct.bIsEOT;
 	NumberOfUsesTotal = iteminfo.ConsumableInfoStruct.NumberOfUseLeft;
 	NumberOfUseLeft = iteminfo.ConsumableInfoStruct.NumberOfUseLeft; //Add randomness to this
-	EffectDuration = iteminfo.ConsumableInfoStruct.EffectDuration;
+	EffectDuration = iteminfo.ConsumableInfoStruct.EffectDuration; //Add randomness to this
+
+	this->ConsumableType = iteminfo.ConsumableInfoStruct.ConsumableType; //Set consumable Tpye (enum describing the type of consume this is (potion, fooddrink, CC, damage, buff)
+	////This may not work and need to be moved to AItem parent call (InitWithItemInfo())
+
 
 	switch (this->ConsumableEffectType)
 	{
-	case EConsumableEffectType::CET_Heal:
+	case EConsumableEffectType::CET_Potion:
 		this->EffectAmount = iteminfo.ConsumableInfoStruct.BaseEffectAmount * ItemLevel;
 		break;
+	case EConsumableEffectType::CET_FoodDrink:
+		break;
 	case EConsumableEffectType::CET_Buff:
-		this->ConsumableBuffType = iteminfo.ConsumableInfoStruct.ConsumableBuffType;
 		this->SetEffectAmountBuffs(iteminfo);
 		break;
 	case EConsumableEffectType::CET_CrowdControl:
-		break;
-	case EConsumableEffectType::CET_Damage:
 		break;
 	default:
 		break;
@@ -65,21 +67,21 @@ void AConsumable::InitWithItemInfo(FItemInfoStruct iteminfo)
 void AConsumable::UseItem(AWayFinderCharacter* player)
 {
 	this->TotalEffectDone = 0;
+	this->TempPlayerEffecting = player;
 
 	switch (ConsumableEffectType)
 	{
-	case EConsumableEffectType::CET_Heal:
-		this->TempPlayerEffecting = player;
-		this->Heal();
+	case EConsumableEffectType::CET_Potion:
+		this->UsePotion();
+		break;
+	case EConsumableEffectType::CET_FoodDrink:
+		break;
+	case EConsumableEffectType::CET_Buff:
+		this->Buff();
 		break;
 	case EConsumableEffectType::CET_CrowdControl:
 		break;
-	case EConsumableEffectType::CET_Damage:
-		break;
-	case EConsumableEffectType::CET_Buff:
-		this->TempPlayerEffecting = player;
-		this->Buff();
-		break;
+	
 	default:
 		break;
 	}
@@ -147,7 +149,7 @@ void AConsumable::Buff()
 		//this->TempPlayerEffecting->GetPlayerHealthComponent()->SetCurrentHealth(this->EffectAmount);
 		this->DestroyOnComplete = this->IsConsumableMultiUse();
 
-		switch (this->ConsumableBuffType)
+		switch (this->ConsumableType.ConsumableBuffType)
 		{
 		case EBuffType::BUFF_Fortify:
 			this->TempPlayerEffecting->GetPlayerHealthComponent()->SetMaxHealth(this->EffectAmount);
@@ -181,7 +183,7 @@ void AConsumable::Buff()
 	if (this->Started)
 	{
 		this->Started = false;
-		switch (this->ConsumableBuffType)
+		switch (this->ConsumableType.ConsumableBuffType)
 		{
 		case EBuffType::BUFF_Fortify:
 			this->TempPlayerEffecting->GetPlayerHealthComponent()->SetMaxHealth(-this->EffectAmount);
@@ -208,7 +210,6 @@ void AConsumable::Buff()
 		this->EndConsumableUse(this->DestroyOnComplete);
 	}
 }
-
 
 bool AConsumable::IsConsumableMultiUse()
 {
@@ -249,7 +250,7 @@ void AConsumable::EndConsumableUse(bool should_destoy)
 
 void AConsumable::SetEffectAmountBuffs(FItemInfoStruct iteminfo)
 {
-	switch (this->ConsumableBuffType)
+	switch (this->ConsumableType.ConsumableBuffType)
 	{
 	case EBuffType::BUFF_Fortify:
 		this->EffectAmount = iteminfo.ConsumableInfoStruct.FortifyEffectAmount * ItemLevel;
@@ -271,6 +272,32 @@ void AConsumable::SetEffectAmountBuffs(FItemInfoStruct iteminfo)
 		break;
 	default:
 		UE_LOG(LogTemp, Warning, TEXT("No Buff Type"));
+		break;
+	}
+}
+
+void AConsumable::UsePotion()
+{
+	switch (this->ConsumableType.PotionType)
+	{
+	case EPotionType::PT_Heal:
+		this->Heal();
+		break;
+	case EPotionType::PT_Ult:
+		break;
+	case EPotionType::PT_Stamina:
+		break;
+	case EPotionType::PT_Magica:
+		break;
+	case EPotionType::PT_Poison:
+		break;
+	case EPotionType::PT_Fire:
+		break;
+	case EPotionType::PT_Bleed:
+		break;
+	case EPotionType::PT_Default:
+		break;
+	default:
 		break;
 	}
 }

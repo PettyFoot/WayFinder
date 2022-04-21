@@ -31,6 +31,7 @@ class AWayFinderGameMode;
 class AItem;
 class ABaseMeleeWeapon;
 class AConsumable;
+class ASpawnerBase;
 struct FItemInfoStruct;
 
 
@@ -59,8 +60,6 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
-	bool test;
-	bool test2;
 
 public:
 
@@ -70,6 +69,9 @@ public:
 	FORCEINLINE bool GetIsEventTriggered() const { return this->bEventTriggered; }
 	FORCEINLINE int32 GetEnemyLevel() const { return this->EnemyLevel; }
 	
+	FORCEINLINE void SetEnemyLevel(int32 level) { this->EnemyLevel = level; }
+	FORCEINLINE void SetEnemySpawner(ASpawnerBase* spawner) { this->EnemySpawner = spawner; }
+
 
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE UWayFinderHealthComponent* GetEnemyHealthComponent() { return this->EnemyHealthComponent; }
@@ -137,7 +139,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 		ELootTableAdjuster LootTableRarityPercentageEnum;
 
-	
 
 	
 
@@ -260,6 +261,8 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
 	int32 EnemyLevel;
+
+	ASpawnerBase* EnemySpawner;
 
 
 private:

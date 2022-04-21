@@ -116,12 +116,15 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerPlayerTakeDamage(float dmg_amount);
 
+	//toggles a player's invulnverability to damage (used in simple ult cast to prevent sliding across floor effect)
 	UFUNCTION(BlueprintCallable)
 	void ToggleInvuln(bool bShouldBInvuln) { this->bIsInvuln = bShouldBInvuln; }
 
 	UFUNCTION(BlueprintCallable)
 	void EquipItem(AItem* item_to_equip);
 
+	//Attaches item to hand (can be any item)
+	//Maybe add an attachable bool to item to help validate if item is attachable?
 	void AttachItemToHand(AItem* item_to_attach);
 
 	
@@ -165,6 +168,9 @@ protected:
 	void LookUpAtRate(float Rate);
 
 	virtual void BeginPlay() override;
+
+	//Player state update function
+	void SetPlayerState(EPlayerState player_state);
 
 
 
@@ -220,13 +226,13 @@ private:
 	TSubclassOf<AWeapon> MeleeWeaponClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Components", meta = (AllowPrivateAccess = "true"))
-		UWayFinderHealthComponent* PlayerHealthComponent;
+	UWayFinderHealthComponent* PlayerHealthComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
-		UAnimMontage* AbilityOneMontage;
+	UAnimMontage* AbilityOneMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", meta = (AllowPrivateAccess = "true"))
-		UAnimMontage* DeathMontage;
+	UAnimMontage* DeathMontage;
 
 	FTimerHandle DeathTimerHandle;
 

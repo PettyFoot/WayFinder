@@ -14,7 +14,6 @@ class UWidgetComponent;
 class USkeletalMeshComponent;
 class UBoxComponent;
 class AWayFinderCharacter;
-class UItemInfo;
 struct FItemInfoStruct;
 
 
@@ -129,7 +128,7 @@ public:
 	uint8 ItemMaxStack;
 
 	//-1 if not inside an inventory (Default state!)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	int32 InventorySlotIndex;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
@@ -154,10 +153,43 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties")
 	FVector SpawnDropLocationTarget;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties")
+		FVector PickupCollisionBoxExtent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties")
+		FVector PickupCollisionBoxOffset;
+
 	FTimerHandle SpawnDropTimerHandle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties")
 	float SpawnDropTimerTime;
+
+
+
+	/////
+	/// Weapon
+	/////
+
+	//Class of weapon (Ranged, melee)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon Class")
+	EWeaponClass WeaponClass;
+
+	UPROPERTY(VisibleAnywhere, Category = "Weapon Stats")
+		EMeleeType MeleeType;
+
+	////////
+	//Consumable
+	// ////////
+	 
+	//Effect of consumable
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
+		EConsumableEffectType ConsumableEffectType;
+
+	//Effect of Buff
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
+		FConsumableType ConsumableType;
+
+
 
 	bool bIsSpawningDrop;
 
@@ -174,6 +206,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
 	UCurveFloat* SpawnDropCurve_Y;
 
+	FVector RandomSpawnDirection;
 
 	void SpawnDropItem(float DeltaTime);
 

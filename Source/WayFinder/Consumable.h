@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Item.h"
+#include "InventoryStructs.h"
 #include "Consumable.generated.h"
 
 /**
@@ -40,13 +41,6 @@ public:
 
 public:
 
-	//Effect of consumable
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
-	EConsumableEffectType ConsumableEffectType;
-
-	//Effect of Buff
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
-	EBuffType ConsumableBuffType;
 
 	//If this consumable is EOT(Effect over time)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Consumable Properties", meta = (AllowPrivateAccess = "true"))
@@ -110,5 +104,7 @@ private:
 	void EndConsumableUse(bool should_destoy);
 
 	void SetEffectAmountBuffs(FItemInfoStruct iteminfo);
+
+	void UsePotion();
 	
 };

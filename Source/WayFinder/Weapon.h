@@ -31,5 +31,7 @@ public:
 	//Called from loot table to populate item with item info from enemies loot table
 	//Sets item based on item info uobject (used for loot table item spawns)
 	virtual void InitWithItemInfo(FItemInfoStruct iteminfo) override;
+
+
 	
 };

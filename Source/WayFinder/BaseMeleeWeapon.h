@@ -139,7 +139,7 @@ private:
 	UBoxComponent* WeaponCollisionBox;
 
 	// Only set if weapon has collided with enemy
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Category = "Weapon Stats")
 	AActor* ActorOverlappedOnUse;
 
 	//Used for setting actor hit for player to apply damage (will be reset by player)
