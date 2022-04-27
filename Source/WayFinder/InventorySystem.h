@@ -24,14 +24,22 @@ struct FInventory
 	TArray<AItem*> Quest; //Don't need to divide up quest items bc they don't have stat variability
 	TArray<AItem*> Misc; //For junk and readables?
 
-	int32 GetNum() const { return Num; }
-	void SetNum(int32 num) { Num = num; }
-	void AddNum(int32 num_to_add) { Num += num_to_add; }
+	FORCEINLINE int32 GetNum() const { return Num; }
+	FORCEINLINE float GetWeight() const { return Weight; }
+
+	FORCEINLINE void SetNum(int32 num) { Num = num; }
+	FORCEINLINE void AddNum(int32 num_to_add) { Num += num_to_add; }
+	FORCEINLINE void SetWeigt(float weight_to_add) 
+	{
+		Weight += weight_to_add; 
+		if (Weight < 0.f) { Weight = 0.f; }
+	}
+
+
 private:
 
 	int32 Num;
-
-
+	float Weight;
 
 };
 
@@ -74,16 +82,16 @@ public:
 	FInventory Inventory;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory Stats")
-		TArray<AItem*> Items;
-
-	//UPROPERTY(EditDefaultsOnly)
-	//TArray<AItem*> DefaultItems;
+	TArray<AItem*> Items;
 
 	UPROPERTY(BlueprintAssignable, Category = "Inventory Stats")
 	FOnInventoryUpdated OnInventoryUpdated;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory Stats")
 	int32 InventoryCapacity;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory Stats")
+	float InventoryMaxWeight;
 
 	UPROPERTY(VisibleAnywhere, Category = "Inventory Stats")
 	AWayFinderCharacter* InventoryOwner;
@@ -126,6 +134,8 @@ private:
 
 	//returns true if item was stacked, false otherwise
 	bool CheckStackable(AItem* item_to_check);
+
+	bool AddItemInv();
 
 	//Return true if consumable was stacked in invetory, false else
 	bool StackConsumable(EConsumableEffectType consume_effect_type);

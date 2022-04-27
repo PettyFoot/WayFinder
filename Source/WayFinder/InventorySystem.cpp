@@ -1,3 +1,5 @@
+#include "InventorySystem.h"
+#include "InventorySystem.h"
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
@@ -94,6 +96,8 @@ bool UInventorySystem::FinalAdd(AItem* item_to_add, int32 amount_to_add)
 	
 	//Update inventory slot indices and broadcast
 	this->UpdateInventory(); 
+	this->Inventory.AddNum(1);
+	this->Inventory.AddWeight(item_to_add->ItemWeight); 
 	OnInventoryUpdated.Broadcast();
 	return true;
 }
@@ -105,7 +109,7 @@ bool UInventorySystem::AddItem(AItem* item_to_add, int32 slot_index)
 	if (this->CurrentAvailableIndex + item_to_add->ItemWeight > this->MaxWeight)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UInventorySystem::AddItem__ Inventory is full cannot add item to inventory"))
-		return;
+		return false;
 	}
 
 	this->SortIncoming(item_to_add);
@@ -273,6 +277,10 @@ void UInventorySystem::SortIncoming(AItem* item_to_sort)
 
 	//Check item stackable to try and stack incoming item
 	//Skip checking weapons as they aint ever stackable...EVER!
+
+	//Check if inventory is full (via weight or slots)
+	if (this->Inventory.GetNum() >= this->InventoryCapacity || this->Inventory.Weight + item_to_sort->ItemWeight > this->InventoryMaxWeight ) { return; }
+
 	if (this->CheckStackable(item_to_sort))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UInventorySystem::SortIncoming__ Item Stacked"));
@@ -281,6 +289,9 @@ void UInventorySystem::SortIncoming(AItem* item_to_sort)
 	{
 		//Item is not stackable for a variety of reasons
 		//Attempt to add item to inventory singularly
+		//Weapons
+		//Armor
+		//Misc/Junk
 	}
 
 
@@ -325,6 +336,35 @@ bool UInventorySystem::CheckStackable(AItem* item_to_check)
 	return false;
 }
 
+bool UInventorySystem::AddItemInv()
+{
+
+
+	switch (this->IncomingItem->ItemClass)
+	{
+	case EItemClass::IC_Weapon:
+		return false; ///weapons never stack
+		break;
+	case EItemClass::IC_Consumable:
+		return this->StackConsumable(this->IncomingItem->ConsumableEffectType);
+		break;
+	case EItemClass::IC_Armor:
+		return false; //Consider making certain armors stackable? all armors? idk
+		break;
+	case EItemClass::IC_QuestItem:
+		//TODO, no quest items yet anyways
+		break;
+	case EItemClass::IC_Readable:
+		//TODO, no readables yet anyways
+		return false;
+		break;
+	case EItemClass::IC_Default:
+		UE_LOG(LogTemp, Warning, TEXT("UInventorySystem::CheckStackable__ Reached default of switch case due to default item class enum"))
+			break;
+
+	return false;
+}
+
 
 
 bool UInventorySystem::StackConsumable(EConsumableEffectType consume_effect_type)
@@ -339,7 +379,7 @@ bool UInventorySystem::StackConsumable(EConsumableEffectType consume_effect_type
 		//TODO, need to implement food/drink
 		break;
 	case EConsumableEffectType::CET_Buff:
-		//TODO, buffs are implemented already
+		//TODO, buffs are implemented alrea
 		break;
 	case EConsumableEffectType::CET_Default:
 		UE_LOG(LogTemp, Warning, TEXT("UInventorySystem::StackConsumable__ Could not find ConsumableEffectType on incoming item"));
@@ -393,8 +433,10 @@ bool UInventorySystem::SortFoodDrink(EFoodDrinkType food_drink, bool bshould_b_s
 		this->AddToExistent(this->Inventory.Consumable.FoodDrink.Food);
 		break;
 	case EFoodDrinkType::FD_Drink:
+		this->AddToExistent(this->Inventory.Consumable.FoodDrink.Drink);
 		break;
 	case EFoodDrinkType::FD_Default:
+		UE_LOG(LogTemp, Warning, TEXT("UInventorySystem::SetFoodDrink__ Default food drink enum"))
 		break;
 	default:
 		break;
@@ -409,16 +451,22 @@ bool UInventorySystem::SortBuff(EBuffType buff, bool bshould_b_stacked)
 	switch (buff)
 	{
 	case EBuffType::BUFF_Fortify:
+		this->AddToExistent(this->Inventory.Consumable.Buffs.Fortify);
 		break;
 	case EBuffType::BUFF_Swift:
+		this->AddToExistent(this->Inventory.Consumable.Buffs.Swift);
 		break;
 	case EBuffType::BUFF_Enrage:
+		this->AddToExistent(this->Inventory.Consumable.Buffs.Enrage);
 		break;
 	case EBuffType::BUFF_Invigorate:
+		this->AddToExistent(this->Inventory.Consumable.Buffs.Invigorate);
 		break;
 	case EBuffType::BUFF_Shield:
+		this->AddToExistent(this->Inventory.Consumable.Buffs.Shield);
 		break;
 	case EBuffType::BUFF_Default:
+		UE_LOG(LogTemp, Warning, TEXT("UInventorySystem::SetBuff__ Default buff enum"));
 		break;
 	default:
 		break;
@@ -427,13 +475,14 @@ bool UInventorySystem::SortBuff(EBuffType buff, bool bshould_b_stacked)
 	return false;
 }
 
-bool UInventorySystem::AddToExistent(TArray<AItem*> inventory_array)
+
+
+bool UInventorySystem::AddToExistent(TArray<AItem*> inventory_array, bool bshould_b_stacked)
 {
-	//Implement for quest items, and possibly armor if armor becomes stackable
 	return false;
 }
 
-bool UInventorySystem::AddToExistent(TArray<AConsumable*> inventory_array, bool bshould_b_stacked)
+bool UInventorySystem::AddToExistent(TArray<AConsumable*> inventory_array)
 {
 	AConsumable* incoming_consume = Cast<AConsumable>(this->IncomingItem);
 	if (!incoming_consume) { return false; }
@@ -466,9 +515,12 @@ bool UInventorySystem::AddToExistent(TArray<AConsumable*> inventory_array, bool 
 					OnInventoryUpdated.Broadcast();
 					return true;
 				}
-			}else {}
-		}else{}
+			}
+			else {}
+		}
+		else {}
 	}
+	
 	return false;
 }
 

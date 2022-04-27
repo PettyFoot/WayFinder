@@ -55,8 +55,6 @@ void AConsumable::InitWithItemInfo(FItemInfoStruct iteminfo)
 	case EConsumableEffectType::CET_Buff:
 		this->SetEffectAmountBuffs(iteminfo);
 		break;
-	case EConsumableEffectType::CET_CrowdControl:
-		break;
 	default:
 		break;
 	}
@@ -78,8 +76,6 @@ void AConsumable::UseItem(AWayFinderCharacter* player)
 		break;
 	case EConsumableEffectType::CET_Buff:
 		this->Buff();
-		break;
-	case EConsumableEffectType::CET_CrowdControl:
 		break;
 	
 	default:

@@ -124,14 +124,10 @@ struct FIConsumablesBuffs
 	TArray<AConsumable*> Enrage;     //Increase attack damage
 	TArray<AConsumable*> Invigorate; //Increase ult charge rate
 	TArray<AConsumable*> Swift;      //Increase movement speed
+	TArray<AConsumable*> Shield;      //Increase shield
+
 };
-USTRUCT(BlueprintType)
-struct FIConsumablesCC
-{
-	GENERATED_BODY()
-		TArray<AConsumable*> Slow; //TODO
-	TArray<AConsumable*> Stun; //TODO
-};
+
 
 USTRUCT(BlueprintType)
 struct FIConsumablesIngest
@@ -147,7 +143,6 @@ struct FIConsumables
 	GENERATED_BODY()
 	FIConsumablesPotions Potions;
 	FIConsumablesBuffs Buffs;
-	FIConsumablesCC CC;
 	FIConsumablesIngest FoodDrink;
 
 };
