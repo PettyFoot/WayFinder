@@ -97,7 +97,7 @@ bool UInventorySystem::FinalAdd(AItem* item_to_add, int32 amount_to_add)
 	//Update inventory slot indices and broadcast
 	this->UpdateInventory(); 
 	this->Inventory.AddNum(1);
-	this->Inventory.AddWeight(item_to_add->ItemWeight); 
+	//this->Inventory.AddWeight(item_to_add->ItemWeight); 
 	OnInventoryUpdated.Broadcast();
 	return true;
 }
@@ -279,7 +279,7 @@ void UInventorySystem::SortIncoming(AItem* item_to_sort)
 	//Skip checking weapons as they aint ever stackable...EVER!
 
 	//Check if inventory is full (via weight or slots)
-	if (this->Inventory.GetNum() >= this->InventoryCapacity || this->Inventory.Weight + item_to_sort->ItemWeight > this->InventoryMaxWeight ) { return; }
+	if (this->Inventory.GetNum() >= this->InventoryCapacity || this->Inventory.GetWeight() + item_to_sort->ItemWeight > this->InventoryMaxWeight) { return; }
 
 	if (this->CheckStackable(item_to_sort))
 	{
@@ -362,8 +362,11 @@ bool UInventorySystem::AddItemInv()
 		UE_LOG(LogTemp, Warning, TEXT("UInventorySystem::CheckStackable__ Reached default of switch case due to default item class enum"))
 			break;
 
+		
+	}
 	return false;
 }
+
 
 
 
@@ -387,6 +390,7 @@ bool UInventorySystem::StackConsumable(EConsumableEffectType consume_effect_type
 	default:
 		break;
 	}
+
 	return false;
 	
 }
