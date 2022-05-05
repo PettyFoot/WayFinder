@@ -1,9 +1,7 @@
 #include "InventorySystem.h"
-#include "InventorySystem.h"
+
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
-#include "InventorySystem.h"
 #include "WayFinderCharacter.h"
 #include "Consumable.h"
 
@@ -14,6 +12,7 @@ UInventorySystem::UInventorySystem()
 	this->InventoryCapacity = 20;
 	this->CurrentAvailableIndex = 0;
 	this->CurrentWeight = 0.f;
+	this->MaxWeight = 100.f;
 }
 
 
@@ -106,7 +105,7 @@ bool UInventorySystem::FinalAdd(AItem* item_to_add, int32 amount_to_add)
 bool UInventorySystem::AddItem(AItem* item_to_add, int32 slot_index)
 {
 	//check if inventory has enough weight capacitity to carry new item
-	if (this->CurrentAvailableIndex + item_to_add->ItemWeight > this->MaxWeight)
+	if (Inventory.GetWeight() + item_to_add->ItemWeight > this->MaxWeight)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UInventorySystem::AddItem__ Inventory is full cannot add item to inventory"))
 		return false;

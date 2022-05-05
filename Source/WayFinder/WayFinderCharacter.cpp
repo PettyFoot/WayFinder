@@ -477,6 +477,7 @@ void AWayFinderCharacter::PickUpItem()
 	if (this->Inventory)
 	{
 		this->Inventory->AddItem(this->TraceHitItem);
+		UE_LOG(LogTemp, Warning, TEXT("Picked up item"));
 	}
 
 }
@@ -503,6 +504,9 @@ void AWayFinderCharacter::AdjustOverlappedItems(int32 amount_to_adjust)
 
 void AWayFinderCharacter::PressedInteract()
 {
+
+
+	UE_LOG(LogTemp, Warning, TEXT("PResed interact"));
 	this->PickUpItem();
 
 }

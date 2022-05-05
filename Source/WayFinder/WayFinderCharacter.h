@@ -192,6 +192,7 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void ActivateUltimateAbility();
 
+	UFUNCTION(BlueprintCallable)
 	void PickUpItem();
 
 private:

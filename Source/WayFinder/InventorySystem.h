@@ -9,7 +9,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryUpdated);
 
-//class AItem;
+class AItem;
 class AWayFinderCharacter;
 
 

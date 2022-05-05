@@ -188,7 +188,7 @@ private:
 		FVector PatrolPointSix;
 
 	//Health component 
-	UPROPERTY(EditAnywhere, Category = "Enemy AI", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy AI", meta = (AllowPrivateAccess = "true"))
 	UWayFinderHealthComponent* EnemyHealthComponent;
 
 	//Set from game mode to enable a boss type enemy to exist until end of wave
