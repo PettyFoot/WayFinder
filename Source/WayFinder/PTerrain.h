@@ -9,6 +9,7 @@
 
 class UProceduralMeshComponent;
 class UCurveFloat;
+class UMaterial;
 
 UENUM(BlueprintType)
 enum class ETerrainScale : uint8
@@ -60,6 +61,12 @@ public:
 	FVector TerrainWorldLocation;
 
 
+	/*void GenerateMeshFromWorld(TArray<FVector> vertices, TArray<int32> triangles, TArray<FLinearColor> vertex_colors, TArray<FVector> normals, TArray<FVector2D> uv0, TArray<FProcMeshTangent>tangents);*/
+	void GenerateMeshFromWorld(TArray<FVector> vertices, TArray<int32>triangles, TArray<FLinearColor>vertex_colors, TArray<FVector>normals, TArray<FVector2D>uv0, TArray<FProcMeshTangent>tangents);
+	
+	void SetMeshMaterial(UMaterial* material);
+
+
 protected:
 
 	virtual void OnConstruction(const FTransform& Transform) override;
@@ -86,27 +93,26 @@ protected:
 
 	//vertices matrix (x,y,z)
 	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
-	TArray<FVector> vertices;
+	TArray<FVector> Vertices;
 
 	//order in which vertices should be joined together creating a mesh of triangles
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 	TArray<int32> Triangles;
 
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
-	TArray<FLinearColor> vertexColors;
+	TArray<FLinearColor> VertexColors;
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 //	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
-	TArray<FVector> normals;
+	TArray<FVector> Normals;
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 	TArray<FVector2D> UV0;
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
-	TArray<FProcMeshTangent> tangents;
+	TArray<FProcMeshTangent> Tangents;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 	ETerrainScale TerrianFidelity;
 
-	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
-	float TerrainScale;
+	
 
 	int SizePlane;
 
@@ -114,7 +120,9 @@ protected:
 
 	void CreateMesh(UProceduralMeshComponent* meshcomp);
 
-	void CreateMeshOld(UProceduralMeshComponent* meshcomp);
+
+
+	
 
 
 private:
@@ -130,18 +138,18 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
 		int PlainSize;
 
+	//Adjusts the length between vertices (more land cover less vertices) 
+	//who can complain?
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+		float TerrainScale;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true", ClampMin = 1, ClampMax = 5))
-		int MeshFidelity;
 
-	//Keep at whole numbers
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true", ClampMin = 1, ClampMax = 6))
-		int UVScale;
-
+	//Adjusts scale of heightmap samples (bigger mounds & bigger lakes)
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 		float Scale;
 
-
+	//Adjusts definition of noise sample
+	//adds more bumps
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 		int Octaves;
 
@@ -153,21 +161,20 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters", meta = (ClampMin = 1.0, ClampMax = 10.0))
 		float Lacunarity;
 
-
+	//Adjusts Z (up) component of each vertice
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 		float HeightMultiplier;
 
-
+	//Not currently used
+	//will use seed to make unique landscape
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 		int OffsetX;
 
-
+	//Not currently used
+	//will use seed to make unique landscape
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 		int OffsetY;
 
-
-
-	//FNoiseMap NoiseMap;
 
 
 };

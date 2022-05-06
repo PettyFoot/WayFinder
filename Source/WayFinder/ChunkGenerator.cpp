@@ -12,6 +12,7 @@ AChunkGenerator::AChunkGenerator()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	this->NumCalculations = 1;
+	this->bIsDone = false;
 	
 }
 
@@ -27,13 +28,11 @@ void AChunkGenerator::PrintCalcData()
 }
 
 
-
-
-
 void AChunkGenerator::InitCalculations(int32 calculations)
 {
 	if (calculations > 0)
 	{
+		this->bIsDone = false;
 		GenerateThread = new AGenerateThread(calculations, this);
 		CurrentRunningThread = FRunnableThread::Create(GenerateThread, TEXT("Calculation Thread"));
 	}
@@ -45,15 +44,20 @@ void AChunkGenerator::InitCalculations(int32 calculations)
 
 void AChunkGenerator::GetGenerationData(TArray<FVector>& out_vertices, TArray<int32>& out_triangles, TArray<FLinearColor>& out_vertex_colors, TArray<FVector>& out_normals, TArray<FVector2D>& out_uv0, TArray<FProcMeshTangent>& out_tangents)
 {
-	out_vertices = this->vertices;
+	out_vertices = this->Vertices;
 	out_triangles = this->Triangles;
-	out_vertex_colors = this->vertexColors;
-	out_normals = this->normals;
-	out_tangents = this->tangents;
+	out_vertex_colors = this->VertexColors;
+	out_normals = this->Normals;
+	out_tangents = this->Tangents;
+
 }
 
 void AChunkGenerator::GenerateTerrain()
 {
+	bIsDone = false;
+	//UE_LOG(LogTemp, Warning, TEXT("Called CreateMesh"));
+	this->ResetArrays();
+
 	for (size_t x = 0; x < PlainSize; x++)
 	{
 		for (size_t y = 0; y < PlainSize; y++)
@@ -65,11 +69,19 @@ void AChunkGenerator::GenerateTerrain()
 			float frequency = 1;
 			float noiseHeight = 0;
 			float perlin_value = 0;
+			int sc = TerrainScale;
+
+			int temp0 = SpawnLocation.X / (sc);
+			int temp1 = SpawnLocation.Y / (sc);
 
 			for (size_t i = 0; i < this->Octaves; i++)
 			{
-				float sampleX = x / this->Scale * frequency;
-				float sampleY = y / this->Scale * frequency;
+
+				float sampleX = (x + temp0) / this->Scale * frequency;
+				//UE_LOG(LogTemp, Warning, TEXT("sample x: %d"), temp0);
+
+				float sampleY = (y + temp1) / this->Scale * frequency;
+				//UE_LOG(LogTemp, Warning, TEXT("sample y: %d"), (temp1));
 				float perlin_generated = FMath::PerlinNoise2D(FVector2D(sampleX, sampleY));
 				noiseHeight += perlin_generated * amplitude;
 
@@ -78,20 +90,30 @@ void AChunkGenerator::GenerateTerrain()
 				perlin_value = perlin_generated;
 			}
 
+			float generated_z(0.f);
 			float height_mult_adj(1.f);
 			if (this->HeightAdjustmentCurve)
 			{
 				height_mult_adj = this->HeightAdjustmentCurve->GetFloatValue(perlin_value) * this->HeightMultiplier;
 			}
+			else
+			{
+				 generated_z = perlin_value * this->HeightMultiplier;
+				 UE_LOG(LogTemp, Warning, TEXT("Height: %f"), this->HeightMultiplier);
+			}
 
-			float generated_z = perlin_value * height_mult_adj;
+			
 
-			vertices.Add(FVector((x * 10), (y * 10), generated_z));
-			vertexColors.Add(FLinearColor(0, 0, 0, perlin_value));
-			UV0.Add(FVector2D((x) / this->PlainSize, (y) / this->PlainSize));
 
+
+			Vertices.Add(FVector((x * this->TerrainScale), (y * this->TerrainScale), generated_z));
+			VertexColors.Add(FLinearColor(0, 0, 0, perlin_value));
+			UV0.Add(FVector2D((x * (TerrainScale * 4)) / this->PlainSize, (y * (TerrainScale * 4)) / this->PlainSize));
+			/*UE_LOG(LogTemp, Warning, TEXT("sample x: %d"), x);
+			UE_LOG(LogTemp, Warning, TEXT("sample y: %d"), y);*/
 		}
 	}
+
 
 	int32 iterations = (PlainSize) * (PlainSize - 1);
 	for (int i = 0; i < iterations; i++)
@@ -108,17 +130,40 @@ void AChunkGenerator::GenerateTerrain()
 	}
 	for (int i = 0; i < Triangles.Num() / 6; i++)
 	{
-		FVector one = this->vertices[this->Triangles[i + 1]] - vertices[Triangles[i]];
-		FVector two = vertices[Triangles[i + 2]] - vertices[Triangles[i]];
+		FVector one = Vertices[Triangles[i + 1]] - Vertices[Triangles[i]];
+		FVector two = Vertices[Triangles[i + 2]] - Vertices[Triangles[i]];
 
 		FVector norm = UKismetMathLibrary::Cross_VectorVector(one, two);
 		norm.Normalize();
-		normals.Add(norm);
+		Normals.Add(norm);
 	}
 
-	tangents.Add(FProcMeshTangent(0, 1, 0));
-	tangents.Add(FProcMeshTangent(0, 1, 0));
-	tangents.Add(FProcMeshTangent(0, 1, 0));
+	Tangents.Add(FProcMeshTangent(0, 1, 0));
+	Tangents.Add(FProcMeshTangent(0, 1, 0));
+	Tangents.Add(FProcMeshTangent(0, 1, 0));
+
+	//UE_LOG(LogTemp, Warning, TEXT("Size_Thread: %d"), Vertices.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("Size_Thread: %d"), Triangles.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("Size_Thread: %d"), Normals.Num());
+}
+
+void AChunkGenerator::EndGeneration()
+{
+	this->bIsDone = true;
+	//UE_LOG(LogTemp, Warning, TEXT("Ended generation chunk"));
+}
+
+void AChunkGenerator::ResetArrays()
+{
+	//vertices matrix (x,y,z)
+	Vertices.Empty();
+
+	//order in which vertices should be joined together creating a mesh of triangles
+	Triangles.Empty();
+	VertexColors.Empty();
+	Normals.Empty();
+	UV0.Empty();
+	Tangents.Empty();
 }
 
 void AChunkGenerator::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -135,4 +180,23 @@ void AChunkGenerator::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		delete GenerateThread;
 	}
 }
+
+void AChunkGenerator::SetGeneratorParams( int plain_size, float terrain_scale, int seed, float scale, int octaves, float persistence, float lacunarity, float height_multiplier, UCurveFloat* height_adjustment_curve)
+{
+	this->PlainSize = plain_size;
+	this->TerrainScale = terrain_scale;
+	this->Seed = seed;
+	this->Scale = scale;
+	this->Octaves = octaves;
+	this->Persistence = persistence;
+	this->Lacunarity = lacunarity;
+	this->HeightMultiplier = height_multiplier;
+	this->HeightAdjustmentCurve = height_adjustment_curve;
+}
+
+void AChunkGenerator::SetGeneratorLocation(FVector spawn_location)
+{
+	this->SpawnLocation = spawn_location;
+}
+
 

@@ -236,6 +236,9 @@ void AWayFinderCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	this->TraceForItems();
+	
+	//UE_LOG(LogTemp, Error, TEXT("Playerrrrrrrrr x: %d"), GetActorLocation().X);
+	//UE_LOG(LogTemp, Error, TEXT("Playerrrrrrrrr y: %d"), GetActorLocation().Y);
 
 	//UE_LOG(LogTemp, Warning, TEXT("num overlapping: %d"), this->NumItemsOverlapping);
 }

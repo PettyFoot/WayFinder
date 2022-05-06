@@ -55,7 +55,7 @@ void AWayFinderGameMode::Tick(float DeltaSeconds)
 	{
 	case EWaveState::WS_Pending:
 
-		UE_LOG(LogTemp, Error, TEXT("NO BOSS"));
+		//UE_LOG(LogTemp, Error, TEXT("NO BOSS"));
 
 		break;
 	case EWaveState::WS_Started:

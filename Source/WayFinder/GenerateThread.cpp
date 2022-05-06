@@ -40,13 +40,14 @@ uint32 AGenerateThread::Run()
 	{
 		if (CalcCount < Calculations)
 		{
-			
-
+			this->CurrentChunkGenerator->GenerateTerrain();
+			//UE_LOG(LogTemp, Warning, TEXT("calc count %d"), CalcCount);
 			CalcCount++;
 		}
 		else
 		{
 			bStopThread = true;
+			this->CurrentChunkGenerator->EndGeneration();
 		}
 	}
 	return 0;

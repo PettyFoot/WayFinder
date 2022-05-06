@@ -42,25 +42,33 @@ public:
 
 	//vertices matrix (x,y,z)
 	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
-		TArray<FVector> vertices;
+		TArray<FVector> Vertices;
 
 	//order in which vertices should be joined together creating a mesh of triangles
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 	TArray<int32> Triangles;
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
-	TArray<FLinearColor> vertexColors;
+	TArray<FLinearColor> VertexColors;
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 //	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
-	TArray<FVector> normals;
+	TArray<FVector> Normals;
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 	TArray<FVector2D> UV0;
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
-	TArray<FProcMeshTangent> tangents;
+	TArray<FProcMeshTangent> Tangents;
 
 	void GetGenerationData(TArray<FVector>& out_vertices, TArray<int32>& out_triangles, TArray<FLinearColor>& out_vertex_colors, TArray<FVector>& out_normals, TArray<FVector2D>& out_uv0,
 		TArray<FProcMeshTangent>& out_tangents);
 
+	
+
 	void GenerateTerrain();
+
+	void EndGeneration();
+
+	bool bIsDone;
+
+	void ResetArrays();
 
 
 
@@ -71,23 +79,28 @@ private:
 
 public:
 
+
+	void SetGeneratorParams(int plain_size, float terrain_scale, int seed, float scale, int octaves, float persistence, float lacunarity, float height_multiplier, UCurveFloat* height_adjustment_curve = nullptr);
+
+	void SetGeneratorLocation(FVector spawn_location);
+
 	//number of calculations to eprform. No need for more than 1
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 	int NumCalculations;
 	void SetNumCalculations(int num_calcs) { if (num_calcs > 0) { NumCalculations = num_calcs; } }
 
+	//Location to spawn new Terrain
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+	FVector SpawnLocation;
+
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 		int PlainSize;
 
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+	float TerrainScale;
+
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 		int Seed;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true", ClampMin = 1, ClampMax = 5))
-	int MeshFidelity;
-
-	//Keep at whole numbers
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true", ClampMin = 1, ClampMax = 6))
-	int UVScale;
 
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 	float Scale;
