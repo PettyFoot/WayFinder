@@ -17,6 +17,8 @@ APWorld::APWorld()
 	bIsGenerating = false;
 	GenerationCurrent = 0;
 	bShouldCleanUp = false;
+	PowerValue = 1.f;
+	UVScale = 2;
 
 }
 
@@ -39,12 +41,12 @@ void APWorld::BeginPlay()
 
 	if (HeightAdjustmentCurve)
 	{
-		this->ChunkGenerator->SetGeneratorParams(PlainSize, TerrainScale, Seed, Scale, Octaves, Persistence, Lacunarity, HeightMultiplier, HeightAdjustmentCurve);
+		this->ChunkGenerator->SetGeneratorParams( UVScale,PlainSize, TerrainScale, Seed, Scale, PowerValue, Octaves, Persistence, Lacunarity, HeightMultiplier, HeightAdjustmentCurve);
 		UE_LOG(LogTemp, Warning, TEXT("Nchunk_generator_plainsize: %d"), this->ChunkGenerator->PlainSize);
 	}
 	else
 	{
-		this->ChunkGenerator->SetGeneratorParams(PlainSize, TerrainScale, Seed, Scale, Octaves, Persistence, Lacunarity, HeightMultiplier);
+		this->ChunkGenerator->SetGeneratorParams(UVScale, PlainSize, TerrainScale, Seed, Scale, PowerValue, Octaves, Persistence, Lacunarity, HeightMultiplier);
 		UE_LOG(LogTemp, Warning, TEXT("Nchunk_generator_plainsize: %d"), this->ChunkGenerator->PlainSize);
 	}
 
@@ -64,14 +66,18 @@ void APWorld::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 
-	this->CheckShouldGenerateTerrain();
+	if (!this->bShouldGenerateTerrain)
+	{
+		this->CheckShouldGenerateTerrain();
+	}
+	
 	if (bShouldGenerateTerrain)
 	{
 		
-			this->GenerateTerrain();
+		this->GenerateTerrain();
 	
 	}
-	if (bShouldCleanUp)
+	if (bShouldCleanUp && !bIsGenerating)
 	{
 		this->CleanUpTerrain();
 		this->bShouldCleanUp = false;
@@ -105,8 +111,8 @@ FVector2D APWorld::CheckPlayerLocation(FVector players_location)
 {
 	x_pos = players_location.X / (((this->PlainSize - 1)) * this->TerrainScale);
 	y_pos = players_location.Y / (((this->PlainSize - 1)) * this->TerrainScale);
-	//if (players_location.X < 0) { x_pos -= 1; }
-	//if (players_location.Y < 0) { y_pos -= 1; }
+	if (players_location.X < 0) { x_pos -= 1; }
+	if (players_location.Y < 0) { y_pos -= 1; }
 	return FVector2D(x_pos, y_pos);
 
 }
@@ -119,60 +125,81 @@ void APWorld::GenerateTerrain()
 		switch (Direction)
 		{
 		case EDirection::D_UP:
-			
-			UE_LOG(LogTemp, Warning, TEXT("player: %f , %f"), this->PlayersInGameLastLocation[playeridx].X, this->PlayersInGameLastLocation[playeridx].Y);
+			//UE_LOG(LogTemp, Warning, TEXT("player: %f , %f"), this->PlayersInGameLastLocation[playeridx].X, this->PlayersInGameLastLocation[playeridx].Y);
 			this->Generating(this->TerrainGenerationOrderStruct.Up, playeridx);
-			
+
+			break;
+		case EDirection::D_UpLeft:
+			this->Generating(this->TerrainGenerationOrderStruct.UpLeft, playeridx);
+
 			break;
 		case EDirection::D_Left:
-		
-
-			UE_LOG(LogTemp, Warning, TEXT("player: %f , %f"), this->PlayersInGameLastLocation[playeridx].X, this->PlayersInGameLastLocation[playeridx].Y);
 			this->Generating(this->TerrainGenerationOrderStruct.Left, playeridx);
+
+			break;
+		case EDirection::D_DownLeft:
+			this->Generating(this->TerrainGenerationOrderStruct.DownLeft, playeridx);
+
 			break;
 		case EDirection::D_Down:
-		
-			
-			
-			UE_LOG(LogTemp, Warning, TEXT("player: %f , %f"), this->PlayersInGameLastLocation[playeridx].X, this->PlayersInGameLastLocation[playeridx].Y);
+		//	UE_LOG(LogTemp, Warning, TEXT("player: %f , %f"), this->PlayersInGameLastLocation[playeridx].X, this->PlayersInGameLastLocation[playeridx].Y);
 			this->Generating(this->TerrainGenerationOrderStruct.Down, playeridx);
-			
+
+			break;
+		case EDirection::D_DownRight:
+			this->Generating(this->TerrainGenerationOrderStruct.DownRight, playeridx);
+
 			break;
 		case EDirection::D_Right:
-			
-			
-			UE_LOG(LogTemp, Warning, TEXT("player: %f , %f"), this->PlayersInGameLastLocation[playeridx].X, this->PlayersInGameLastLocation[playeridx].Y);
+			//UE_LOG(LogTemp, Warning, TEXT("player: %f , %f"), this->PlayersInGameLastLocation[playeridx].X, this->PlayersInGameLastLocation[playeridx].Y);
 			this->Generating(this->TerrainGenerationOrderStruct.Right, playeridx);
+
+			break;
+		case EDirection::D_UpRight:
+			this->Generating(this->TerrainGenerationOrderStruct.UpRight, playeridx);
+
 			break;
 		default:
 			break;
 		}
-
 		playeridx++;
 	}
+
+
+	
+
+
+
+
+
+
+
+			
 }
 
 void APWorld::CleanUpTerrain()
 {
-	int player_idx = 0;
+	
 	for (auto& location : this->PlayersInGameLastLocation)
 	{
-		for (auto& generatedterrainchunk : GeneratedTerrainChunks)
+		for (int i = 0; i < this->GeneratedTerrainChunks.Num(); i++)
 		{
-			if (generatedterrainchunk)
+			if (this->GeneratedTerrainChunks[i])
 			{
-				int x = (generatedterrainchunk->GetActorLocation().X / ((this->PlainSize - 1) * this->TerrainScale)) - location.X;
-				int y = (generatedterrainchunk->GetActorLocation().Y / ((this->PlainSize - 1) * this->TerrainScale)) - location.Y;
-				if (x < -1 || x > 1 || y < -1 || y > 1)
+				int x = (this->GeneratedTerrainChunks[i]->GetActorLocation().X / ((this->PlainSize - 1) * this->TerrainScale)) - location.X;
+				int y = (this->GeneratedTerrainChunks[i]->GetActorLocation().Y / ((this->PlainSize - 1) * this->TerrainScale)) - location.Y;
+				if (x < -GenerateDistanceThreshold || x > GenerateDistanceThreshold || y < -GenerateDistanceThreshold || y > GenerateDistanceThreshold)
 				{
-
-					generatedterrainchunk->Destroy();
-
-
+					this->GeneratedTerrainChunks[i]->Destroy();
 				}
+			}
+			else
+			{
+				this->GeneratedTerrainChunks.RemoveAt(i);
 			}
 			
 		}
+		this->GeneratedTerrainChunks.Shrink();
 	}
 	
 }
@@ -215,55 +242,61 @@ void APWorld::FindPlayerDirection(FVector2D player_loc_last)
 	{
 		Direction = EDirection::D_UP;
 		UE_LOG(LogTemp, Warning, TEXT("Up"));
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
 	}
 	else if (dif_vec.X == 1 && dif_vec.Y == 1)
 	{
+		Direction = EDirection::D_UpLeft;
 		UE_LOG(LogTemp, Warning, TEXT("UpLeft"));
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
 	}
 	else if (dif_vec.X == 1 && dif_vec.Y == 0)
 	{
 		Direction = EDirection::D_Left;
 		UE_LOG(LogTemp, Warning, TEXT("Left"));
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
 	}
 	else if (dif_vec.X == 1 && dif_vec.Y == -1)
 	{
+		Direction = EDirection::D_DownLeft;
 		UE_LOG(LogTemp, Warning, TEXT("DownLeft"));
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
 	}
 	else if (dif_vec.X == 0 && dif_vec.Y == -1)
 	{
 		Direction = EDirection::D_Down;
 		UE_LOG(LogTemp, Warning, TEXT("Down"));
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
 	}
 	else if (dif_vec.X == -1 && dif_vec.Y == -1)
 	{
+		Direction = EDirection::D_DownRight;
 		UE_LOG(LogTemp, Warning, TEXT("DownRight"));
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
 	}
 	else if (dif_vec.X == -1 && dif_vec.Y == 0)
 	{
 		Direction = EDirection::D_Right;
 		UE_LOG(LogTemp, Warning, TEXT("Right"));
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
 	}
 	else if (dif_vec.X == -1 && dif_vec.Y == 1)
 	{
+		Direction = EDirection::D_UpRight;
 		UE_LOG(LogTemp, Warning, TEXT("UpRight"));
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
-		UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
+		//UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);
 	}else
-	{ }
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Else"));
+	}
 /*	UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.X);
 	UE_LOG(LogTemp, Warning, TEXT("Dif x: %f"), dif_vec.Y);*/
 
@@ -297,6 +330,9 @@ void APWorld::Generating(TArray<FVector2D> generation_order, int player_idx)
 		//UE_LOG(LogTemp, Warning, TEXT("Size: %d"), Vertices.Num());
 		//UE_LOG(LogTemp, Warning, TEXT("Size: %d"), Triangles.Num());
 //UE_LOG(LogTemp, Warning, TEXT("Size: %d"), Normals.Num());
+		//UE_LOG(LogTemp, Warning, TEXT(" vertices length: %d"), Vertices.Num());
+		//UE_LOG(LogTemp, Warning, TEXT(" normals length: %d"), Normals.Num());
+		//UE_LOG(LogTemp, Warning, TEXT(" triangles length: %d"), Triangles.Num());
 
 
 		float xx = (PlayersInGameLastLocation[player_idx].X + generation_order[GenerationCurrent].X) * ((this->PlainSize - 1) * this->TerrainScale);
@@ -309,6 +345,7 @@ void APWorld::Generating(TArray<FVector2D> generation_order, int player_idx)
 		{
 			//UE_LOG(LogTemp, Warning, TEXT("ACTOR"));
 			generated_actor->SetActorLocation(FVector(xx, yy, 0));
+			generated_actor->SetTerrainParams(this->UVScale, this->PlainSize, this->TerrainScale, this->Seed, this->Scale, this->PowerValue, this->Octaves, this->Persistence, this->Lacunarity, this->HeightMultiplier, this->HeightAdjustmentCurve);
 			generated_actor->GenerateMeshFromWorld(this->Vertices, this->Triangles, this->VertexColors, this->Normals, this->UV0, this->Tangents);
 			if (this->LandscapeMaterial)
 			{
@@ -325,7 +362,8 @@ void APWorld::Generating(TArray<FVector2D> generation_order, int player_idx)
 		//UE_LOG(LogTemp, Warning, TEXT("Generated One piece of terrain"));
 	}
 
-	if (GenerationCurrent >= 3)
+	
+	if (GenerationCurrent >= generation_order.Num() * this->GenerateDistance)
 	{
 		bIsGenerating = false;
 		this->bShouldGenerateTerrain = false;

@@ -147,6 +147,9 @@ public:
 	//Check if player is invuln (nothing uses this currently)
 	bool bIsInvuln;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	bool bIsBuildModeOn;
+
 protected:
 
 	/** Called for forwards/backward input */

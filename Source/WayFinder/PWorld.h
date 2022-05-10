@@ -30,23 +30,25 @@ struct TerrainGenerationOrder {
 		Up[2] = FVector2D(-1, 1);
 
 		UpLeft.SetNum(5);
-		UpLeft[0] = FVector2D(-2, 0);
-		UpLeft[1] = FVector2D(-2, 1);
-		UpLeft[2] = FVector2D(-2, 2);
-		UpLeft[3] = FVector2D(-1, 2);
-		UpLeft[4] = FVector2D(0, 2);
+		UpLeft[0] = FVector2D(-1, 1);
+		UpLeft[1] = FVector2D(0, 1);
+		UpLeft[2] = FVector2D(1, 1);
+		UpLeft[3] = FVector2D(1, 0);
+		UpLeft[4] = FVector2D(1, -1);
 
-		Left.SetNum(3);
+		Left.SetNum(4);
+
 		Left[0] = FVector2D(1, -1);
 		Left[1] = FVector2D(1, 0);
 		Left[2] = FVector2D(1, 1);
+		Left[3] = FVector2D(0, 2);
 
 		DownLeft.SetNum(5);
-		DownLeft[0] = FVector2D(0, -2);
-		DownLeft[1] = FVector2D(-1, -2);
-		DownLeft[2] = FVector2D(-2, -2);
-		DownLeft[3] = FVector2D(-2, -1);
-		DownLeft[4] = FVector2D(-2, 0);
+		DownLeft[0] = FVector2D(1, 1);
+		DownLeft[1] = FVector2D(1, 0);
+		DownLeft[2] = FVector2D(1, -1);
+		DownLeft[3] = FVector2D(0, -1);
+		DownLeft[4] = FVector2D(-1, -1);
 
 		Down.SetNum(3);
 		Down[0] = FVector2D(-1, -1);
@@ -54,23 +56,24 @@ struct TerrainGenerationOrder {
 		Down[2] = FVector2D(1, -1);
 
 		DownRight.SetNum(5);
-		DownRight[0] = FVector2D(2, 0);
-		DownRight[1] = FVector2D(2, -1);
-		DownRight[2] = FVector2D(2, -2);
-		DownRight[3] = FVector2D(1, -2);
-		DownRight[4] = FVector2D(0, -2);
+		DownRight[0] = FVector2D(1, -1);
+		DownRight[1] = FVector2D(0, -1);
+		DownRight[2] = FVector2D(1, -1);
+		DownRight[3] = FVector2D(-1, 0);
+		DownRight[4] = FVector2D(-1, 1);
 
-		Right.SetNum(3);
+		Right.SetNum(4);
 		Right[0] = FVector2D(-1, 1);
 		Right[1] = FVector2D(-1, 0);
 		Right[2] = FVector2D(-1, -1);
+		Left[3] = FVector2D(0, 2);
 
 		UpRight.SetNum(5);
-		UpRight[0] = FVector2D(0, 2);
-		UpRight[1] = FVector2D(1, 2);
-		UpRight[2] = FVector2D(2, 2);
-		UpRight[3] = FVector2D(2, 1);
-		UpRight[4] = FVector2D(2, 0);
+		UpRight[0] = FVector2D(1, -1);
+		UpRight[1] = FVector2D(1, 0);
+		UpRight[2] = FVector2D(1, 1);
+		UpRight[3] = FVector2D(0, 1);
+		UpRight[4] = FVector2D(-1, 1);
 		
 	}
 
@@ -79,9 +82,13 @@ struct TerrainGenerationOrder {
 enum class EDirection {
 
 	D_UP,
+	D_UpLeft,
 	D_Left,
+	D_DownLeft,
 	D_Down,
-	D_Right
+	D_DownRight,
+	D_Right,
+	D_UpRight
 };
 
 UCLASS()
@@ -147,8 +154,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Paramaters", meta = (AllowPrivateAccess = "true"))
 		int Seed;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Paramaters", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
 	float Scale;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
+	float PowerValue;
 
 	//Adjusts definition of noise sample
 	//adds more bumps
@@ -177,10 +187,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 		float TerrainScale;
 
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+		int UVScale;
+
 	//Distance player has to be from new terrain chunk to generate chunk
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Parameters", meta = (AllowPrivateAccess = "true"))
 	int GenerateDistanceThreshold;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
 	TArray<AWayFinderCharacter*> PlayersInGame;
 
 	TArray<FVector2D> PlayersInGameLastLocation;
@@ -196,18 +210,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Paramaters", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<AWayFinderCharacter> CharacterClass;
 
-	UPROPERTY(VisibleAnywhere, Category = "Mesh Paramaters")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 	int y_pos;
-	UPROPERTY(VisibleAnywhere, Category = "Mesh Paramaters")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 	int x_pos;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Paramaters", meta = (AllowPrivateAccess = "true"))
 	UMaterial* LandscapeMaterial;
 
 	bool bShouldCleanUp;
-
-
-	
 
 	//vertices matrix (x,y,z)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "World Parameters", meta = (AllowPrivateAccess = "true"))

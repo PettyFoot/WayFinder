@@ -80,7 +80,7 @@ private:
 public:
 
 
-	void SetGeneratorParams(int plain_size, float terrain_scale, int seed, float scale, int octaves, float persistence, float lacunarity, float height_multiplier, UCurveFloat* height_adjustment_curve = nullptr);
+	void SetGeneratorParams(int uv_scale, int plain_size, float terrain_scale, int seed, float scale, float power_value, int octaves, float persistence, float lacunarity, float height_multiplier, UCurveFloat* height_adjustment_curve = nullptr);
 
 	void SetGeneratorLocation(FVector spawn_location);
 
@@ -105,6 +105,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 	float Scale;
 
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+	float PowerValue;
+
 
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 	int Octaves;
@@ -128,6 +131,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 	float OffsetY;
+
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+		int UVScale;
 
 
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")

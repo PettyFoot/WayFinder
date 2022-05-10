@@ -124,7 +124,7 @@ void AWayFinderCharacter::SetupPlayerInputComponent(class UInputComponent* Playe
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AWayFinderCharacter::LookUpAtRate);
 
-	PlayerInputComponent->BindAxis("Zoom", this, &AWayFinderCharacter::ZoomEnabled);
+	PlayerInputComponent->BindAxis("Mouse Wheel Scroll Input", this, &AWayFinderCharacter::ZoomEnabled);
 
 }
 
@@ -208,7 +208,8 @@ void AWayFinderCharacter::LookUpAtRate(float Rate)
 void AWayFinderCharacter::ZoomEnabled(float value)
 {
 	//FollowCamera
-	if (!this->FollowCamera) { UE_LOG(LogTemp, Warning, TEXT("NoFollowCamera")); return; }
+
+	if (!this->FollowCamera || this->bIsBuildModeOn) { UE_LOG(LogTemp, Warning, TEXT("NoFollowCamera")); return; }
 
 	float cur_fov(0.f);
 	cur_fov = this->FollowCamera->FieldOfView;

@@ -66,14 +66,19 @@ public:
 	
 	void SetMeshMaterial(UMaterial* material);
 
+	void SetTerrainVectors(TArray<FVector> vertices, TArray<int32>triangles, TArray<FLinearColor>vertex_colors, TArray<FVector>normals, TArray<FVector2D>uv0, TArray<FProcMeshTangent>tangents);
+
+
+	void SetTerrainParams(int uv_scale, int plain_size, float terrain_scale, int seed, float scale, float power_value, int octaves, float persistence, float lacunarity,
+		float height_multiplier, UCurveFloat* height_adjustment_curve = nullptr);
 
 protected:
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 
 	void CreateMesh();
-	UFUNCTION(BlueprintCallable)
-	void CreateMesh(float x_pos, float y_pos);
+
+	
 	void UpdateMesh();
 	void PostActorCreated();
 	void PostLoad();
@@ -121,6 +126,7 @@ protected:
 	void CreateMesh(UProceduralMeshComponent* meshcomp);
 
 
+	
 
 	
 
@@ -129,8 +135,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 		UProceduralMeshComponent* mesh;
-	UPROPERTY(VisibleAnywhere)
-		UProceduralMeshComponent* meshother_test;
+
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+		FVector SpawnLocation;
 
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 		int Seed;
@@ -174,6 +181,17 @@ private:
 	//will use seed to make unique landscape
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 		int OffsetY;
+
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+		int UVScale;
+
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+		int UVDivisor;
+
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+	bool bIsUsingDivisor;
+
+	
 
 
 

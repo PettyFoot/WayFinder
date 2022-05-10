@@ -10,10 +10,9 @@
 APTerrain::APTerrain()
 {
 	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("GeneratedMesh"));
-	meshother_test = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("GeneratedMesh_test"));
 	RootComponent = mesh;
 	mesh->bUseAsyncCooking = true;
-	meshother_test->bUseAsyncCooking = true;
+
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	PlainSize = 10;
@@ -31,6 +30,8 @@ APTerrain::APTerrain()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	bIsUsingDivisor = false;
+
 
 }
 
@@ -42,8 +43,8 @@ void APTerrain::BeginPlay()
 
 	FTransform actor_trans;
 
-	this->TerrainWorldLocation = UKismetMathLibrary::TransformLocation(actor_trans, GetActorLocation());
-	this->TerrainWorldLocation = GetActorLocation();
+	//this->TerrainWorldLocation = UKismetMathLibrary::TransformLocation(actor_trans, GetActorLocation());
+	//this->TerrainWorldLocation = GetActorLocation();
 /*	UE_LOG(LogTemp, Warning, TEXT("x: %f"), TerrainWorldLocation.X);
 	UE_LOG(LogTemp, Warning, TEXT("y: %f"), TerrainWorldLocation.Y);
 	UE_LOG(LogTemp, Warning, TEXT("z: %f"), TerrainWorldLocation.Z);*/
@@ -61,10 +62,13 @@ void APTerrain::OnConstruction(const FTransform& Transform)
 
 	Super::OnConstruction(Transform);
 
+//	UE_LOG(LogTemp, Warning, TEXT("OnContruction"));
+
 	//this->TerrainWorldLocation = GetActorLocation();
 /*	UE_LOG(LogTemp, Warning, TEXT("x: %f"), TerrainWorldLocation.X);
 	UE_LOG(LogTemp, Warning, TEXT("y: %f"), TerrainWorldLocation.Y);
 	UE_LOG(LogTemp, Warning, TEXT("z: %f"), TerrainWorldLocation.Z);*/
+	
 	//this->GenerateNoise();
 
 }
@@ -112,13 +116,10 @@ void APTerrain::SetMeshMaterial(UMaterial* material)
 	this->mesh->SetMaterial(0, material);
 }
 
-void APTerrain::CreateMesh(float x_pos, float y_pos)
-{
-}
 
 void APTerrain::GenerateNoise(bool bShouldClearCurrent)
 {
-
+	UE_LOG(LogTemp, Warning, TEXT("GenerateNoise"));
 	if (bShouldClearCurrent)
 	{
 		this->ClearMesh();
@@ -172,17 +173,17 @@ void APTerrain::CreateMesh(UProceduralMeshComponent* meshcomp)
 			for (size_t i = 0; i < this->Octaves; i++)
 			{
 
-				float sampleX = (x + temp0) / this->Scale * frequency;
+				float sampleX = ((x + temp0) * frequency) / this->Scale;
 			//	UE_LOG(LogTemp, Warning, TEXT("sample x: %d"), temp0);
 
-				float sampleY = (y + temp1) / this->Scale * frequency;
+				float sampleY = ((y + temp1) * frequency) / this->Scale;
 				//UE_LOG(LogTemp, Warning, TEXT("sample y: %d"), (temp1));
 				float perlin_generated = FMath::PerlinNoise2D(FVector2D(sampleX, sampleY));
 				noiseHeight += perlin_generated * amplitude;
 
 				amplitude *= this->Persistence;
 				frequency *= this->Lacunarity;
-				perlin_value = perlin_generated;
+				perlin_value = noiseHeight;
 			}
 
 			float height_mult_adj(1.f);
@@ -197,7 +198,16 @@ void APTerrain::CreateMesh(UProceduralMeshComponent* meshcomp)
 
 			Vertices.Add(FVector((x * this->TerrainScale), (y * this->TerrainScale), generated_z));
 			VertexColors.Add(FLinearColor(0, 0, 0, perlin_value));
-			UV0.Add(FVector2D((x * (TerrainScale * 4)) / this->PlainSize, (y * (TerrainScale * 4)) / this->PlainSize));
+
+			if (bIsUsingDivisor)
+			{
+				UV0.Add(FVector2D(x * (TerrainScale * UVScale) / this->UVDivisor, y * (TerrainScale * UVScale) / this->UVDivisor));
+			}
+			else
+			{
+				UV0.Add(FVector2D(x * (TerrainScale * UVScale) / this->TerrainScale, y * (TerrainScale * UVScale) / this->TerrainScale));
+			}
+			
 			/*UE_LOG(LogTemp, Warning, TEXT("sample x: %d"), x);
 			UE_LOG(LogTemp, Warning, TEXT("sample y: %d"), y);*/
 		}
@@ -236,11 +246,45 @@ void APTerrain::CreateMesh(UProceduralMeshComponent* meshcomp)
 	meshcomp->ContainsPhysicsTriMeshData(true);
 }
 
-
-void APTerrain::GenerateMeshFromWorld(TArray<FVector> vertices, TArray<int32>triangles, TArray<FLinearColor>vertex_colors, TArray<FVector>normals, TArray<FVector2D>uv0, TArray<FProcMeshTangent>tangents)
+void APTerrain::SetTerrainParams(int uv_scale, int plain_size, float terrain_scale, int seed, float scale, float power_value, int octaves, float persistence, float lacunarity, float height_multiplier, UCurveFloat* height_adjustment_curve)
 {
+	this->UVScale = uv_scale;
+	this->PlainSize = plain_size;
+	this->TerrainScale = terrain_scale;
+	this->Seed = seed;
+	this->Scale = scale;
+	this->Octaves = octaves;
+	this->Persistence = persistence;
+	this->Lacunarity = lacunarity;
+	this->HeightMultiplier = height_multiplier;
+	this->HeightAdjustmentCurve = height_adjustment_curve;
+}
+
+void APTerrain::SetTerrainVectors(TArray<FVector> vertices, TArray<int32>triangles, TArray<FLinearColor>vertex_colors, TArray<FVector>normals, TArray<FVector2D>uv0, TArray<FProcMeshTangent>tangents)
+{
+	this->Vertices = vertices;
+	this->Triangles = triangles;
+	this->VertexColors = vertex_colors;
+	this->Normals = normals;
+	this->UV0 = UV0;
+	this->Tangents = tangents;
+
+}
+
+
+void APTerrain::GenerateMeshFromWorld(TArray<FVector> vertices, TArray<int32> triangles, TArray<FLinearColor> vertex_colors, TArray<FVector> normals, TArray<FVector2D> uv0, TArray<FProcMeshTangent> tangents)
+{
+	//this->GenerateNoise();
+//	UE_LOG(LogTemp, Warning, TEXT(" uv length: %d"), uv0.Num());
+	//UE_LOG(LogTemp, Warning, TEXT(" vertices length: %d"), vertices.Num());
+	//UE_LOG(LogTemp, Warning, TEXT(" normals length: %d"), normals.Num());
+	//UE_LOG(LogTemp, Warning, TEXT(" triangles length: %d"), triangles.Num());
+	//UKismetProceduralMeshLibrary::CalculateTangentsForMesh(vertices, triangles, uv0, normals, tangents);
+	//UE_LOG(LogTemp, Warning, TEXT(" vertices length: %d"), vertices.Num());
+	//UE_LOG(LogTemp, Warning, TEXT(" normals length: %d"), normals.Num());
+//	UE_LOG(LogTemp, Warning, TEXT(" triangles length: %d"), triangles.Num());
 	this->mesh->CreateMeshSection_LinearColor(0, vertices, triangles, normals, uv0, vertex_colors, tangents, true);
-		this->mesh->ContainsPhysicsTriMeshData(true);
+	this->mesh->ContainsPhysicsTriMeshData(true);
 }
 
 

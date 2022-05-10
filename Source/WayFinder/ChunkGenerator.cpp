@@ -2,6 +2,7 @@
 
 
 #include "ChunkGenerator.h"
+#include "KismetProceduralMeshLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
 //#include "Kismet/GameplayStatics.h"
 #include "GenerateThread.h"
@@ -13,6 +14,7 @@ AChunkGenerator::AChunkGenerator()
 	PrimaryActorTick.bCanEverTick = true;
 	this->NumCalculations = 1;
 	this->bIsDone = false;
+	this->PowerValue = 1;
 	
 }
 
@@ -49,6 +51,7 @@ void AChunkGenerator::GetGenerationData(TArray<FVector>& out_vertices, TArray<in
 	out_vertex_colors = this->VertexColors;
 	out_normals = this->Normals;
 	out_tangents = this->Tangents;
+	out_uv0 = this->UV0;
 
 }
 
@@ -58,64 +61,79 @@ void AChunkGenerator::GenerateTerrain()
 	//UE_LOG(LogTemp, Warning, TEXT("Called CreateMesh"));
 	this->ResetArrays();
 
-	for (size_t x = 0; x < PlainSize; x++)
+	int idx = 0;
+	this->Vertices.SetNum(PlainSize * PlainSize);
+	this->UV0.SetNum(PlainSize * PlainSize);
+	this->VertexColors.SetNum(PlainSize * PlainSize);
+	for (int x = 0; x < PlainSize; x++)
 	{
-		for (size_t y = 0; y < PlainSize; y++)
+		for (int y = 0; y < PlainSize; y++)
 		{
-			float topLeftW = (PlainSize - 1) / -2.f;
-			float topLeftH = (PlainSize - 1) / 2.f;
 
 			float amplitude = 1;
 			float frequency = 1;
 			float noiseHeight = 0;
 			float perlin_value = 0;
 			int sc = TerrainScale;
+		
+			int temp0 = (SpawnLocation.X + this->Seed) / (sc);
+			int temp1 = (SpawnLocation.Y + this->Seed) / (sc);
 
-			int temp0 = SpawnLocation.X / (sc);
-			int temp1 = SpawnLocation.Y / (sc);
-
-			for (size_t i = 0; i < this->Octaves; i++)
+			for (int i = 0; i < this->Octaves; i++)
 			{
 
-				float sampleX = (x + temp0) / this->Scale * frequency;
+				float sampleX = ((x + temp0) * frequency) / this->Scale;
 				//UE_LOG(LogTemp, Warning, TEXT("sample x: %d"), temp0);
-
-				float sampleY = (y + temp1) / this->Scale * frequency;
-				//UE_LOG(LogTemp, Warning, TEXT("sample y: %d"), (temp1));
+				float sampleY = ((y + temp1) * frequency) / this->Scale;
+		
 				float perlin_generated = FMath::PerlinNoise2D(FVector2D(sampleX, sampleY));
+			
 				noiseHeight += perlin_generated * amplitude;
 
 				amplitude *= this->Persistence;
 				frequency *= this->Lacunarity;
-				perlin_value = perlin_generated;
+				perlin_value = noiseHeight;
 			}
 
+			perlin_value = FMath::Pow(perlin_value, this->PowerValue);
 			float generated_z(0.f);
 			float height_mult_adj(1.f);
+
 			if (this->HeightAdjustmentCurve)
 			{
 				height_mult_adj = this->HeightAdjustmentCurve->GetFloatValue(perlin_value) * this->HeightMultiplier;
 			}
 			else
 			{
-				 generated_z = perlin_value * this->HeightMultiplier;
-				 UE_LOG(LogTemp, Warning, TEXT("Height: %f"), this->HeightMultiplier);
+				generated_z = perlin_value * this->HeightMultiplier;
+				// UE_LOG(LogTemp, Warning, TEXT("Height: %f"), generated_z);
 			}
-
 			
-
-
-
-			Vertices.Add(FVector((x * this->TerrainScale), (y * this->TerrainScale), generated_z));
-			VertexColors.Add(FLinearColor(0, 0, 0, perlin_value));
-			UV0.Add(FVector2D((x * (TerrainScale * 4)) / this->PlainSize, (y * (TerrainScale * 4)) / this->PlainSize));
-			/*UE_LOG(LogTemp, Warning, TEXT("sample x: %d"), x);
-			UE_LOG(LogTemp, Warning, TEXT("sample y: %d"), y);*/
+			Vertices[idx] = FVector((x * this->TerrainScale), (y * this->TerrainScale), generated_z);
+			VertexColors[idx] = FLinearColor(0, 0, 0, perlin_value);
+			UV0[idx] = FVector2D(x* (TerrainScale* UVScale) / this->TerrainScale, y* (TerrainScale* UVScale) / this->TerrainScale);
+			idx++;
+			//Vertices.Add(FVector((x * this->TerrainScale), (y * this->TerrainScale), generated_z));
+			//VertexColors.Add(FLinearColor(0, 0, 0, perlin_value));
+			//UV0.Add(FVector2D(x * (TerrainScale * UVScale) / this->TerrainScale, y * (TerrainScale * UVScale) / this->TerrainScale));
 		}
 	}
 
-
+	
 	int32 iterations = (PlainSize) * (PlainSize - 1);
+
+/*	for (int i = 0; i < this->Vertices.Num(); i++)
+	{
+		Triangles.Add(i);
+		Triangles.Add(i + PlainSize + 1);
+		Triangles.Add(i + PlainSize);
+
+		//Triangles.Add(i);
+		//Triangles.Add(i + 1);
+		//Triangles.Add(i + PlainSize + 1);
+
+	}*/
+
 	for (int i = 0; i < iterations; i++)
 	{
 		if ((i + 1) % PlainSize != 0) {
@@ -128,23 +146,23 @@ void AChunkGenerator::GenerateTerrain()
 			Triangles.Add(i + PlainSize + 1);
 		}
 	}
-	for (int i = 0; i < Triangles.Num() / 6; i++)
+	Normals.SetNum(this->Vertices.Num());
+	/*for (int i = 0; i < Vertices.Num(); i++)
 	{
-		FVector one = Vertices[Triangles[i + 1]] - Vertices[Triangles[i]];
-		FVector two = Vertices[Triangles[i + 2]] - Vertices[Triangles[i]];
+		FVector one = Vertices[i+1] - Vertices[i];
+		FVector two = Vertices[i + PlainSize] - Vertices[i];
 
 		FVector norm = UKismetMathLibrary::Cross_VectorVector(one, two);
 		norm.Normalize();
 		Normals.Add(norm);
-	}
+	}*/
 
 	Tangents.Add(FProcMeshTangent(0, 1, 0));
 	Tangents.Add(FProcMeshTangent(0, 1, 0));
 	Tangents.Add(FProcMeshTangent(0, 1, 0));
 
-	//UE_LOG(LogTemp, Warning, TEXT("Size_Thread: %d"), Vertices.Num());
-	//UE_LOG(LogTemp, Warning, TEXT("Size_Thread: %d"), Triangles.Num());
-	//UE_LOG(LogTemp, Warning, TEXT("Size_Thread: %d"), Normals.Num());
+	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Vertices, Triangles, UV0, Normals, Tangents);
+
 }
 
 void AChunkGenerator::EndGeneration()
@@ -181,17 +199,19 @@ void AChunkGenerator::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 }
 
-void AChunkGenerator::SetGeneratorParams( int plain_size, float terrain_scale, int seed, float scale, int octaves, float persistence, float lacunarity, float height_multiplier, UCurveFloat* height_adjustment_curve)
+void AChunkGenerator::SetGeneratorParams(int uv_scale, int plain_size, float terrain_scale, int seed, float scale, float power_value, int octaves, float persistence, float lacunarity, float height_multiplier, UCurveFloat* height_adjustment_curve )
 {
 	this->PlainSize = plain_size;
 	this->TerrainScale = terrain_scale;
 	this->Seed = seed;
 	this->Scale = scale;
+	this->PowerValue = power_value;
 	this->Octaves = octaves;
 	this->Persistence = persistence;
 	this->Lacunarity = lacunarity;
 	this->HeightMultiplier = height_multiplier;
 	this->HeightAdjustmentCurve = height_adjustment_curve;
+	this->UVScale = uv_scale;
 }
 
 void AChunkGenerator::SetGeneratorLocation(FVector spawn_location)
