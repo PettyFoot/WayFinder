@@ -35,6 +35,8 @@ void APWorld::BeginPlay()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No chunk generator"));
 	}
+	else { this->ChunkGenerator->PWorldOwner = this; }
+
 
 
 	GetWorldTimerManager().SetTimer(this->GetPlayersLocationTimer, this, &APWorld::GetWorldPlayers, this->GetPlayersLocationTimerTime);
@@ -315,6 +317,7 @@ void APWorld::Generating(TArray<FVector2D> generation_order, int player_idx)
 	if (!this->bIsGenerating)
 	{
 		//UE_LOG(LogTemp, Warning, TEXT("Began Generation"));
+		this->ChunkGenerator->rand_num = FMath::RandRange(0, 1);
 		
 		float xx = (PlayersInGameLastLocation[player_idx].X + generation_order[GenerationCurrent].X) * ((this->PlainSize - 1) * this->TerrainScale);
 		float yy = (PlayersInGameLastLocation[player_idx].Y + generation_order[GenerationCurrent].Y) * ((this->PlainSize - 1) * this->TerrainScale);

@@ -79,6 +79,92 @@ struct TerrainGenerationOrder {
 
 };
 
+
+
+USTRUCT(BlueprintType)
+struct FNoiseSetting 
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Paramaters", meta = (AllowPrivateAccess = "true"))
+		int Seed;
+
+	//Adjusts Z (up) component of each vertice
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+		float HeightMultiplier;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
+		float Scale;
+
+	//Adjusts the length between vertices (more land cover less vertices) 
+	//who can complain?
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+		float TerrainScale;
+
+	//Adjusts definition of noise sample
+	//adds more bumps
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters", meta = (ClampMin = 1, ClampMax = 11))
+		int Octaves;
+
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters", meta = (ClampMin = 0.0001, ClampMax = 0.9999))
+		float Persistence;
+
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters", meta = (ClampMin = 1.0, ClampMax = 10.0))
+		float Lacunarity;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
+		float PowerValue;
+
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+		UCurveFloat* HeightAdjustmentCurve;
+
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+		int UVScale;
+
+
+};
+
+USTRUCT(BlueprintType)
+struct FNoiseFilter
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Noise Settings")
+	FNoiseSetting NoiseSetting;
+
+	UPROPERTY(EditAnywhere, Category = "Noise Settings")
+	bool bIsEnabled;
+
+	UPROPERTY(EditAnywhere, Category = "Noise Settings")
+	bool bUseFirstLayerAsMask;
+
+	float EvaluatePoint(FVector2D grid_loc)
+	{
+
+		float noise_val = 0;
+		float frequency = 1;
+		float amplitude = 1.f;
+		for (int w = 0; w < NoiseSetting.Octaves; w++)
+		{
+			float x_samp = (grid_loc.X * frequency) / NoiseSetting.Scale; // NoiseSetting.Scale;
+			float y_samp = (grid_loc.Y * frequency) / NoiseSetting.Scale; // NoiseSetting.Scale;
+			//UE_LOG(LogTemp, Warning, TEXT("perlin Noisefilter X: %f"), x_samp);
+			//UE_LOG(LogTemp, Warning, TEXT("perlin Noisefilter Y: %f"), y_samp);
+			float val = 0.f;
+			val = FMath::PerlinNoise2D(FVector2D(x_samp, y_samp));
+			
+			noise_val += FMath::Clamp(val * amplitude, 0.f, 1.f); //(val + 1) * .5f * amplitude;
+			frequency *= NoiseSetting.Lacunarity;
+			amplitude *= NoiseSetting.Persistence;
+ 		}
+		noise_val = FMath::Pow(noise_val, NoiseSetting.PowerValue);
+		//UE_LOG(LogTemp, Warning, TEXT("perlin Noisefilter: %f"), noise_val * NoiseSetting.HeightMultiplier);
+		return noise_val * NoiseSetting.HeightMultiplier;
+	}
+
+
+};
+
 enum class EDirection {
 
 	D_UP,
@@ -111,6 +197,9 @@ public:
 	//True or false based on if player has moved enough to have new terrain generate
 	bool bShouldGenerateTerrain;
 	bool bShouldStartGenerationCheck;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Paramaters", meta = (AllowPrivateAccess = "true"))
+		TArray<FNoiseFilter> NoiseFilters;
 
 private:
 
@@ -147,6 +236,8 @@ protected:
 	TArray<APTerrain*> GeneratedTerrainChunks;
 
 	AChunkGenerator* ChunkGenerator;
+
+	
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Paramaters", meta = (AllowPrivateAccess = "true"))
 	int PlainSize;

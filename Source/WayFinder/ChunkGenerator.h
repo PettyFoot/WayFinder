@@ -8,6 +8,9 @@
 #include "ChunkGenerator.generated.h"
 
 class AGenerateThread;
+class APWorld;
+
+
 
 UCLASS()
 class WAYFINDER_API AChunkGenerator : public AActor
@@ -60,6 +63,8 @@ public:
 	void GetGenerationData(TArray<FVector>& out_vertices, TArray<int32>& out_triangles, TArray<FLinearColor>& out_vertex_colors, TArray<FVector>& out_normals, TArray<FVector2D>& out_uv0,
 		TArray<FProcMeshTangent>& out_tangents);
 
+
+	APWorld* PWorldOwner;
 	
 
 	void GenerateTerrain();
@@ -79,6 +84,7 @@ private:
 
 public:
 
+	float rand_num;
 
 	void SetGeneratorParams(int uv_scale, int plain_size, float terrain_scale, int seed, float scale, float power_value, int octaves, float persistence, float lacunarity, float height_multiplier, UCurveFloat* height_adjustment_curve = nullptr);
 
@@ -111,6 +117,8 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 	int Octaves;
+
+	int AltOctaves;
 
 
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters", meta = (ClampMin = 0.0001, ClampMax = 0.9999))
