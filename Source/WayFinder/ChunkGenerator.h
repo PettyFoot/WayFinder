@@ -10,6 +10,17 @@
 class AGenerateThread;
 class APWorld;
 
+UENUM(BlueprintType) 
+enum class EBiome : uint8
+{
+	Biome_Water =0,
+	Biome_Meadow,
+	Biome_Forest,
+	Biome_FootHills,
+	Biome_Mountains,
+	Biome_Default
+
+};
 
 
 UCLASS()
@@ -47,6 +58,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
 		TArray<FVector> Vertices;
 
+	//Map to help sort out vertices biome, which in turn will help generate foliage locations
+	TMap<FVector, EBiome> VerticeBiomeMap;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
 		TArray<FVector> FoliageSpawnVertices;
 
@@ -78,6 +92,8 @@ public:
 
 	void ResetArrays();
 
+	EBiome SortBiome(float in_val);
+
 	//void GenerateFoliageBasedOnBiome()
 
 
@@ -85,9 +101,20 @@ private:
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+	void GenerateTerrainLayered();
+
+	void GenerateTerrainSingle();
+
+	void GenerateFoliageOnBiome();
+
 public:
 
 	float rand_num;
+
+	FTimerHandle AlgorithmTestTimer;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
+	float TestTime = 100.f;
 
 	void SetGeneratorParams(int uv_scale, int plain_size, float terrain_scale, int seed, float scale, float power_value, int octaves, float persistence, float lacunarity, float height_multiplier, UCurveFloat* height_adjustment_curve = nullptr);
 

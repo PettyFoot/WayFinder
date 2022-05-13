@@ -62,247 +62,49 @@ void AChunkGenerator::GenerateTerrain()
 	//UE_LOG(LogTemp, Warning, TEXT("Called CreateMesh"));
 	this->ResetArrays();
 
-
-	int idx = 0;
 	this->Vertices.SetNum(PlainSize * PlainSize);
+	this->VerticeBiomeMap.Reserve(PlainSize * PlainSize);
 	this->UV0.SetNum(PlainSize * PlainSize);
 	this->VertexColors.SetNum(PlainSize * PlainSize);
 
-	
 	if (PWorldOwner)
 	{
 		if (PWorldOwner->NoiseFilters.Num() > 1)
 		{
-			for (int x = 0; x < PlainSize; x++)
-			{
-				for (int y = 0; y < PlainSize; y++)
-				{
-					
-					float perlin_value = 0;
-					int sc = TerrainScale;
-					int temp0 = (SpawnLocation.X + this->Seed) / (sc);
-					int temp1 = (SpawnLocation.Y + this->Seed) / (sc);
-
-					float sampleX = (x + temp0);
-					//UE_LOG(LogTemp, Warning, TEXT("sample x: %d"), temp0);
-					float sampleY = (y + temp1);
-					FVector2D sample(sampleX, sampleY);
-
-					float noise_first_layer = PWorldOwner->NoiseFilters[0].EvaluatePoint(sample);
-					if (PWorldOwner->NoiseFilters[0].bIsEnabled)
-					{
-						perlin_value = noise_first_layer;
-					}
-				
-
-					for (int i = 1; i < PWorldOwner->NoiseFilters.Num(); i++)
-					{
-						sample = FVector2D(sampleX, sampleY);
-
-						if (PWorldOwner->NoiseFilters[i].bIsEnabled)
-						{
-							float mask = 1.f;
-							if (PWorldOwner->NoiseFilters[i].bUsePreviousLayerAsMask)
-							{
-								if (i - 1 > -1)
-								{
-									noise_first_layer = PWorldOwner->NoiseFilters[i - 1].EvaluatePoint(sample);
-									mask = noise_first_layer;
-								}
-							}
-							perlin_value += PWorldOwner->NoiseFilters[i].EvaluatePoint(sample) * mask;
-							//UE_LOG(LogTemp, Warning, TEXT("perlin chunkgenerator: %f"), perlin_value);
-						}
-						
-
-					}
-					/*float amplitude = 1;
-						float frequency = 1;
-						float noiseHeight = 0;
-						//float perlin_value = 0;
-						
-
-						for (int i = 0; i < this->Octaves; i++)
-						{
-
-							float sampleX = ((x + temp0) * frequency) / this->Scale;
-							//UE_LOG(LogTemp, Warning, TEXT("sample x: %d"), temp0);
-							float sampleY = ((y + temp1) * frequency) / this->Scale;
-
-							float perlin_generated = FMath::PerlinNoise2D(FVector2D(sampleX, sampleY));
-
-							noiseHeight += perlin_generated * amplitude;
-
-							amplitude *= this->Persistence;
-							frequency *= this->Lacunarity;
-							perlin_value = noiseHeight;
-						}
-
-						perlin_value = FMath::Pow(perlin_value, this->PowerValue);
-						float generated_z(0.f);
-						float height_mult_adj(1.f);
-
-						if (this->HeightAdjustmentCurve)
-						{
-							height_mult_adj = this->HeightAdjustmentCurve->GetFloatValue(perlin_value) * this->HeightMultiplier;
-						}
-						else
-						{
-							generated_z = perlin_value * this->HeightMultiplier;
-							// UE_LOG(LogTemp, Warning, TEXT("Height: %f"), generated_z);
-						}*/
-
-					Vertices[idx] = FVector((x * this->TerrainScale), (y * this->TerrainScale), perlin_value);
-					VertexColors[idx] = FLinearColor(0, 0, 0, perlin_value);
-					UV0[idx] = FVector2D(x * (TerrainScale * UVScale) / this->TerrainScale, y * (TerrainScale * UVScale) / this->TerrainScale);
-					idx++;
-					//Vertices.Add(FVector((x * this->TerrainScale), (y * this->TerrainScale), generated_z));
-					//VertexColors.Add(FLinearColor(0, 0, 0, perlin_value));
-					//UV0.Add(FVector2D(x * (TerrainScale * UVScale) / this->TerrainScale, y * (TerrainScale * UVScale) / this->TerrainScale));
-				}
-			}
+			this->GenerateTerrainLayered();
 		}
 		else
 		{
-			for (int x = 0; x < PlainSize; x++)
-			{
-				for (int y = 0; y < PlainSize; y++)
-				{
-
-					float amplitude = 1;
-					float frequency = 1;
-					float noiseHeight = 0;
-					float perlin_value = 0;
-					int sc = TerrainScale;
-
-					int temp0 = (SpawnLocation.X + this->Seed) / (sc);
-					int temp1 = (SpawnLocation.Y + this->Seed) / (sc);
-
-					for (int i = 0; i < this->Octaves; i++)
-					{
-
-						float sampleX = ((x + temp0) * frequency) / this->Scale;
-						//UE_LOG(LogTemp, Warning, TEXT("sample x: %d"), temp0);
-						float sampleY = ((y + temp1) * frequency) / this->Scale;
-
-						float perlin_generated = FMath::PerlinNoise2D(FVector2D(sampleX, sampleY));
-
-						noiseHeight += perlin_generated * amplitude;
-
-						amplitude *= this->Persistence;
-						frequency *= this->Lacunarity;
-						perlin_value = noiseHeight;
-					}
-
-					perlin_value = FMath::Pow(perlin_value, this->PowerValue);
-					float generated_z(0.f);
-					float height_mult_adj(1.f);
-
-					if (this->HeightAdjustmentCurve)
-					{
-						height_mult_adj = this->HeightAdjustmentCurve->GetFloatValue(perlin_value) * this->HeightMultiplier;
-					}
-					else
-					{
-						generated_z = perlin_value * this->HeightMultiplier;
-						// UE_LOG(LogTemp, Warning, TEXT("Height: %f"), generated_z);
-					}
-
-					Vertices[idx] = FVector((x * this->TerrainScale), (y * this->TerrainScale), generated_z);
-					VertexColors[idx] = FLinearColor(0, 0, 0, perlin_value);
-					UV0[idx] = FVector2D(x * (TerrainScale * UVScale) / this->TerrainScale, y * (TerrainScale * UVScale) / this->TerrainScale);
-					idx++;
-					//Vertices.Add(FVector((x * this->TerrainScale), (y * this->TerrainScale), generated_z));
-					//VertexColors.Add(FLinearColor(0, 0, 0, perlin_value));
-					//UV0.Add(FVector2D(x * (TerrainScale * UVScale) / this->TerrainScale, y * (TerrainScale * UVScale) / this->TerrainScale));
-				}
-			}
-
+			this->GenerateTerrainSingle();
 		}
 	}
 	else
 	{
-		for (int x = 0; x < PlainSize; x++)
-		{
-			for (int y = 0; y < PlainSize; y++)
-			{
-
-				float amplitude = 1;
-				float frequency = 1;
-				float noiseHeight = 0;
-				float perlin_value = 0;
-				int sc = TerrainScale;
-
-				int temp0 = (SpawnLocation.X + this->Seed) / (sc);
-				int temp1 = (SpawnLocation.Y + this->Seed) / (sc);
-
-				for (int i = 0; i < this->Octaves; i++)
-				{
-
-					float sampleX = ((x + temp0) * frequency) / this->Scale;
-					//UE_LOG(LogTemp, Warning, TEXT("sample x: %d"), temp0);
-					float sampleY = ((y + temp1) * frequency) / this->Scale;
-
-					float perlin_generated = FMath::PerlinNoise2D(FVector2D(sampleX, sampleY));
-
-					noiseHeight += perlin_generated * amplitude;
-
-					amplitude *= this->Persistence;
-					frequency *= this->Lacunarity;
-					perlin_value = noiseHeight;
-				}
-
-				perlin_value = FMath::Pow(perlin_value, this->PowerValue);
-				float generated_z(0.f);
-				float height_mult_adj(1.f);
-
-				if (this->HeightAdjustmentCurve)
-				{
-					height_mult_adj = this->HeightAdjustmentCurve->GetFloatValue(perlin_value) * this->HeightMultiplier;
-				}
-				else
-				{
-					generated_z = perlin_value * this->HeightMultiplier;
-					// UE_LOG(LogTemp, Warning, TEXT("Height: %f"), generated_z);
-				}
-
-				Vertices[idx] = FVector((x * this->TerrainScale), (y * this->TerrainScale), generated_z);
-				VertexColors[idx] = FLinearColor(0, 0, 0, perlin_value);
-				UV0[idx] = FVector2D(x * (TerrainScale * UVScale) / this->TerrainScale, y * (TerrainScale * UVScale) / this->TerrainScale);
-				idx++;
-
-			}
-
-
-		}
+		this->GenerateTerrainSingle();
 	}
-	
+
 	int32 iterations = (PlainSize) * (PlainSize - 1);
-
-/*	for (int i = 0; i < this->Vertices.Num(); i++)
-	{
-		Triangles.Add(i);
-		Triangles.Add(i + PlainSize + 1);
-		Triangles.Add(i + PlainSize);
-
-		//Triangles.Add(i);
-		//Triangles.Add(i + 1);
-		//Triangles.Add(i + PlainSize + 1);
-
-	}*/
-
+	Triangles.SetNum(iterations * 6);
+	int tris = 0;
 	for (int i = 0; i < iterations; i++)
 	{
 		if ((i + 1) % PlainSize != 0) {
-			Triangles.Add(i);
-			Triangles.Add(i + PlainSize + 1);
-			Triangles.Add(i + PlainSize);
-
-			Triangles.Add(i);
-			Triangles.Add(i + 1);
-			Triangles.Add(i + PlainSize + 1);
+			Triangles[tris] = i;
+			Triangles[tris + 1] = i + PlainSize + 1;
+			Triangles[tris + 2] = i + PlainSize;
+			Triangles[tris + 3] = i;
+			Triangles[tris + 4] = i + 1;
+			Triangles[tris + 5] = i + PlainSize + 1;
+			tris += 6;
+			//Triangles.Add(i);
+			//Triangles.Add(i + PlainSize + 1);
+			//Triangles.Add(i + PlainSize);
+			//Triangles.Add(i);
+			//Triangles.Add(i + 1);
+			//Triangles.Add(i + PlainSize + 1);
 		}
 	}
+	
 	Normals.SetNum(this->Vertices.Num());
 	/*for (int i = 0; i < Vertices.Num(); i++)
 	{
@@ -320,6 +122,115 @@ void AChunkGenerator::GenerateTerrain()
 
 	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Vertices, Triangles, UV0, Normals, Tangents);
 
+}
+
+void AChunkGenerator::GenerateTerrainLayered()
+{
+	int idx = 0;
+	float min = 0;
+	float max = 1;
+
+	for (int x = 0; x < PlainSize; x++)
+	{
+		for (int y = 0; y < PlainSize; y++)
+		{
+
+			float perlin_value = 0;
+			int sc = TerrainScale;
+			int temp0 = (SpawnLocation.X + this->Seed) / (sc);
+			int temp1 = (SpawnLocation.Y + this->Seed) / (sc);
+
+			float sampleX = (x + temp0);
+			float sampleY = (y + temp1);
+			FVector2D sample(sampleX, sampleY);
+
+			float noise_first_layer = PWorldOwner->NoiseFilters[0].EvaluatePoint(sample);
+
+			if (PWorldOwner->NoiseFilters[0].bIsEnabled)
+			{
+				perlin_value = noise_first_layer;
+			}
+
+			for (int i = 1; i < PWorldOwner->NoiseFilters.Num(); i++)
+			{
+				sample = FVector2D(sampleX, sampleY);
+
+				if (PWorldOwner->NoiseFilters[i].bIsEnabled)
+				{
+					float mask = 1.f;
+					if (PWorldOwner->NoiseFilters[i].bUsePreviousLayerAsMask)
+					{
+						if (i - 1 > -1)
+						{
+							noise_first_layer = PWorldOwner->NoiseFilters[i - 1].EvaluatePoint(sample);
+							mask = noise_first_layer;
+						}
+					}
+					perlin_value += PWorldOwner->NoiseFilters[i].EvaluatePoint(sample) * mask;
+					//UE_LOG(LogTemp, Warning, TEXT("perlin chunkgenerator: %f"), perlin_value);
+				}
+			}
+		
+
+			Vertices[idx] = FVector((x * this->TerrainScale), (y * this->TerrainScale), perlin_value);
+			VertexColors[idx] = FLinearColor(0, 0, 0, perlin_value);
+			UV0[idx] = FVector2D(x * (TerrainScale * UVScale) / this->TerrainScale, 
+				y * (TerrainScale * UVScale) / this->TerrainScale);
+			idx++;
+
+		}
+	}
+}
+
+void AChunkGenerator::GenerateTerrainSingle()
+{
+	int idx = 0;
+	for (int x = 0; x < PlainSize; x++)
+	{
+		for (int y = 0; y < PlainSize; y++)
+		{
+			float amplitude = 1;
+			float frequency = 1;
+			float noiseHeight = 0;
+			float perlin_value = 0;
+
+			int sc = TerrainScale;
+			int temp0 = (SpawnLocation.X + this->Seed) / (sc);
+			int temp1 = (SpawnLocation.Y + this->Seed) / (sc);
+
+			for (int i = 0; i < this->Octaves; i++)
+			{
+				float sampleX = ((x + temp0) * frequency) / this->Scale;
+				float sampleY = ((y + temp1) * frequency) / this->Scale;
+
+				float perlin_generated = FMath::PerlinNoise2D(FVector2D(sampleX, sampleY));
+
+				noiseHeight += perlin_generated * amplitude;
+				amplitude *= this->Persistence;
+				frequency *= this->Lacunarity;
+				perlin_value = noiseHeight;
+			}
+
+			perlin_value = FMath::Pow(perlin_value, this->PowerValue);
+			float generated_z(0.f);
+			float height_mult_adj(1.f);
+
+			if (this->HeightAdjustmentCurve)
+			{
+				height_mult_adj = this->HeightAdjustmentCurve->GetFloatValue(perlin_value) * this->HeightMultiplier;
+			}
+			else
+			{
+				generated_z = perlin_value * this->HeightMultiplier;
+				// UE_LOG(LogTemp, Warning, TEXT("Height: %f"), generated_z);
+			}
+
+			Vertices[idx] = FVector((x * this->TerrainScale), (y * this->TerrainScale), generated_z);
+			VertexColors[idx] = FLinearColor(0, 0, 0, perlin_value);
+			UV0[idx] = FVector2D(x * (TerrainScale * UVScale) / this->TerrainScale, y * (TerrainScale * UVScale) / this->TerrainScale);
+			idx++;
+		}
+	}
 }
 
 void AChunkGenerator::EndGeneration()
@@ -341,6 +252,12 @@ void AChunkGenerator::ResetArrays()
 	Tangents.Empty();
 }
 
+EBiome AChunkGenerator::SortBiome(float in_val)
+{
+	float num = in_val
+	return EBiome();
+}
+
 void AChunkGenerator::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
@@ -355,6 +272,7 @@ void AChunkGenerator::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		delete GenerateThread;
 	}
 }
+
 
 void AChunkGenerator::SetGeneratorParams(int uv_scale, int plain_size, float terrain_scale, int seed, float scale, float power_value, int octaves, float persistence, float lacunarity, float height_multiplier, UCurveFloat* height_adjustment_curve )
 {
