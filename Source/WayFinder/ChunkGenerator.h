@@ -47,6 +47,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
 		TArray<FVector> Vertices;
 
+	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
+		TArray<FVector> FoliageSpawnVertices;
+
 	//order in which vertices should be joined together creating a mesh of triangles
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 	TArray<int32> Triangles;
@@ -75,7 +78,7 @@ public:
 
 	void ResetArrays();
 
-
+	//void GenerateFoliageBasedOnBiome()
 
 
 private:

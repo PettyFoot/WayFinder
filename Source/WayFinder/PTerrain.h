@@ -54,6 +54,12 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
+	
+	bool bIsDestroyed;
+
+	void DestroyTerrain();
+
+
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -135,6 +141,7 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 		UProceduralMeshComponent* mesh;
+
 
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 		FVector SpawnLocation;

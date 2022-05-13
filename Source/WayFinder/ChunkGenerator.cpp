@@ -102,7 +102,7 @@ void AChunkGenerator::GenerateTerrain()
 						if (PWorldOwner->NoiseFilters[i].bIsEnabled)
 						{
 							float mask = 1.f;
-							if (PWorldOwner->NoiseFilters[i].bUseFirstLayerAsMask)
+							if (PWorldOwner->NoiseFilters[i].bUsePreviousLayerAsMask)
 							{
 								if (i - 1 > -1)
 								{

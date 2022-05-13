@@ -34,6 +34,12 @@ APTerrain::APTerrain()
 
 
 }
+void APTerrain::DestroyTerrain()
+{
+	this->bIsDestroyed = true;
+
+}
+
 
 // Called when the game starts or when spawned
 void APTerrain::BeginPlay()
@@ -42,6 +48,7 @@ void APTerrain::BeginPlay()
 
 
 	FTransform actor_trans;
+	bIsDestroyed = false;
 
 	//this->TerrainWorldLocation = UKismetMathLibrary::TransformLocation(actor_trans, GetActorLocation());
 	//this->TerrainWorldLocation = GetActorLocation();

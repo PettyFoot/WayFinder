@@ -113,8 +113,8 @@ FVector2D APWorld::CheckPlayerLocation(FVector players_location)
 {
 	x_pos = players_location.X / (((this->PlainSize - 1)) * this->TerrainScale);
 	y_pos = players_location.Y / (((this->PlainSize - 1)) * this->TerrainScale);
-	if (players_location.X < 0) { x_pos -= 1; }
-	if (players_location.Y < 0) { y_pos -= 1; }
+	if (players_location.X < 0) { x_pos -= 1; } //To adjust for origin of chunks being bottom right corner
+	if (players_location.Y < 0) { y_pos -= 1; } //To adjust for origin of chunks being bottom right corner
 	return FVector2D(x_pos, y_pos);
 
 }
@@ -186,17 +186,20 @@ void APWorld::CleanUpTerrain()
 	{
 		for (int i = 0; i < this->GeneratedTerrainChunks.Num(); i++)
 		{
-			if (this->GeneratedTerrainChunks[i])
+			if (this->GeneratedTerrainChunks[i]->bIsDestroyed != true)
 			{
 				int x = (this->GeneratedTerrainChunks[i]->GetActorLocation().X / ((this->PlainSize - 1) * this->TerrainScale)) - location.X;
 				int y = (this->GeneratedTerrainChunks[i]->GetActorLocation().Y / ((this->PlainSize - 1) * this->TerrainScale)) - location.Y;
 				if (x < -GenerateDistanceThreshold || x > GenerateDistanceThreshold || y < -GenerateDistanceThreshold || y > GenerateDistanceThreshold)
 				{
-					this->GeneratedTerrainChunks[i]->Destroy();
+					
+					//this->GeneratedTerrainChunkLocations.Remove(FVector2D(GeneratedTerrainChunks[i]->GetActorLocation().X, GeneratedTerrainChunks[i]->GetActorLocation().Y));
+					this->GeneratedTerrainChunks[i]->DestroyTerrain();
 				}
 			}
 			else
 			{
+				this->GeneratedTerrainChunks[i]->Destroy();
 				this->GeneratedTerrainChunks.RemoveAt(i);
 			}
 			
@@ -319,29 +322,34 @@ void APWorld::Generating(TArray<FVector2D> generation_order, int player_idx)
 		//UE_LOG(LogTemp, Warning, TEXT("Began Generation"));
 		this->ChunkGenerator->rand_num = FMath::RandRange(0, 1);
 		
+		bool bShouldThread = true;
 		float xx = (PlayersInGameLastLocation[player_idx].X + generation_order[GenerationCurrent].X) * ((this->PlainSize - 1) * this->TerrainScale);
 		float yy = (PlayersInGameLastLocation[player_idx].Y + generation_order[GenerationCurrent].Y) * ((this->PlainSize - 1) * this->TerrainScale);
-
-		this->ChunkGenerator->SetGeneratorLocation(FVector(xx, yy, 0));
-		this->ChunkGenerator->InitCalculations(1);
-		this->bIsGenerating = true;
+		for (auto& generatedchunks : this->GeneratedTerrainChunks)
+		{
+			if (FVector2D(generatedchunks->GetActorLocation().X, generatedchunks->GetActorLocation().Y) == FVector2D(xx, yy))
+			{
+				bShouldThread = false;
+				this->GenerationCurrent++;
+			}
+		}
+		if (bShouldThread)
+		{
+			this->ChunkGenerator->SetGeneratorLocation(FVector(xx, yy, 0));
+			this->ChunkGenerator->InitCalculations(1);
+			this->bIsGenerating = true;
+		}
+		
 	}
 
-	if (this->ChunkGenerator->bIsDone)
+	if (this->ChunkGenerator->bIsDone && this->bIsGenerating)
 	{
 		this->ChunkGenerator->GetGenerationData(this->Vertices, this->Triangles, this->VertexColors, this->Normals, this->UV0, this->Tangents);
-		//UE_LOG(LogTemp, Warning, TEXT("Size: %d"), Vertices.Num());
-		//UE_LOG(LogTemp, Warning, TEXT("Size: %d"), Triangles.Num());
-//UE_LOG(LogTemp, Warning, TEXT("Size: %d"), Normals.Num());
-		//UE_LOG(LogTemp, Warning, TEXT(" vertices length: %d"), Vertices.Num());
-		//UE_LOG(LogTemp, Warning, TEXT(" normals length: %d"), Normals.Num());
-		//UE_LOG(LogTemp, Warning, TEXT(" triangles length: %d"), Triangles.Num());
-
 
 		float xx = (PlayersInGameLastLocation[player_idx].X + generation_order[GenerationCurrent].X) * ((this->PlainSize - 1) * this->TerrainScale);
 		float yy = (PlayersInGameLastLocation[player_idx].Y + generation_order[GenerationCurrent].Y) * ((this->PlainSize - 1) * this->TerrainScale);
 		//UE_LOG(LogTemp, Warning, TEXT("Scale x: %f Scale y: %f"), xx, yy);
-
+		//this->GeneratedTerrainChunkLocations.Add(FVector2D(xx, yy));
 		APTerrain* generated_actor = this->GetWorld()->SpawnActor<APTerrain>(APTerrain::StaticClass());
 
 		if (generated_actor)

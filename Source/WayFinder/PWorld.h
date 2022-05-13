@@ -136,7 +136,7 @@ struct FNoiseFilter
 	bool bIsEnabled;
 
 	UPROPERTY(EditAnywhere, Category = "Noise Settings")
-	bool bUseFirstLayerAsMask;
+	bool bUsePreviousLayerAsMask;
 
 	float EvaluatePoint(FVector2D grid_loc)
 	{
@@ -146,8 +146,8 @@ struct FNoiseFilter
 		float amplitude = 1.f;
 		for (int w = 0; w < NoiseSetting.Octaves; w++)
 		{
-			float x_samp = (grid_loc.X * frequency) / NoiseSetting.Scale; // NoiseSetting.Scale;
-			float y_samp = (grid_loc.Y * frequency) / NoiseSetting.Scale; // NoiseSetting.Scale;
+			float x_samp = ((grid_loc.X + NoiseSetting.Seed) * frequency) / NoiseSetting.Scale; // NoiseSetting.Scale;
+			float y_samp = ((grid_loc.Y + NoiseSetting.Seed) * frequency) / NoiseSetting.Scale; // NoiseSetting.Scale;
 			//UE_LOG(LogTemp, Warning, TEXT("perlin Noisefilter X: %f"), x_samp);
 			//UE_LOG(LogTemp, Warning, TEXT("perlin Noisefilter Y: %f"), y_samp);
 			float val = 0.f;
@@ -232,30 +232,36 @@ private:
 
 protected:
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "World Parameters", meta = (AllowPrivateAccess = "true"))
-	TArray<APTerrain*> GeneratedTerrainChunks;
+	/* Default Terrain noise settings, if NoiseFilter array is less than 2 elements long */
 
-	AChunkGenerator* ChunkGenerator;
+	//Adjusts the length between vertices (more land cover less vertices) 
+	//who can complain?
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+		float TerrainScale;
 
-	
+	//Scale of UVs (multiples of 2s work better)
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+		int UVScale;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Paramaters", meta = (AllowPrivateAccess = "true"))
-	int PlainSize;
+		int PlainSize;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Paramaters", meta = (AllowPrivateAccess = "true"))
 		int Seed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
-	float Scale;
+		float Scale;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
-	float PowerValue;
+		float PowerValue;
 
 	//Adjusts definition of noise sample
 	//adds more bumps
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 		int Octaves;
 
+	//Adjusts height effect per octave
+	//Like LOD percent of triangles each LOD (except LOD is replaced with octaves here)
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters", meta = (ClampMin = 0.0001, ClampMax = 0.9999))
 		float Persistence;
 
@@ -266,32 +272,36 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 		float HeightMultiplier;
 
+	//Curve to adjust for height values
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 		UCurveFloat* HeightAdjustmentCurve;
 
-	//Determines how many "chunks" out will render/spawn
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Parameters", meta = (AllowPrivateAccess = "true"))
-	int GenerateDistance;
-
-	//Adjusts the length between vertices (more land cover less vertices) 
-	//who can complain?
-	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
-		float TerrainScale;
-
-	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
-		int UVScale;
-
 	//Distance player has to be from new terrain chunk to generate chunk
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Parameters", meta = (AllowPrivateAccess = "true"))
-	int GenerateDistanceThreshold;
+		int GenerateDistanceThreshold;
 
+	//Determines how many "chunks" out will render/spawn
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Parameters", meta = (AllowPrivateAccess = "true"))
+		int GenerateDistance;
+
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "World Parameters", meta = (AllowPrivateAccess = "true"))
+	TArray<APTerrain*> GeneratedTerrainChunks;
+
+	//Current chunk generator, may need a seperate chunk generator for each player.
+	AChunkGenerator* ChunkGenerator;
+
+	//List of players in game, to generate terrain around
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
 	TArray<AWayFinderCharacter*> PlayersInGame;
 
+	//List of current player grid locations
 	TArray<FVector2D> PlayersInGameLastLocation;
 
+	//Struct holding look up chunk generation grid locations
 	TerrainGenerationOrder TerrainGenerationOrderStruct;
 
+	//direction a player is travelling in
 	EDirection Direction;
 
 	bool bIsGenerating;
@@ -314,6 +324,10 @@ protected:
 	//vertices matrix (x,y,z)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "World Parameters", meta = (AllowPrivateAccess = "true"))
 	TArray<FVector> Vertices;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
+	TArray<FVector> FoliageSpawnVertices;
+
 	//order in which vertices should be joined together creating a mesh of triangles
 UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 	TArray<int32> Triangles;
@@ -326,5 +340,8 @@ UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 	TArray<FVector2D> UV0;
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 	TArray<FProcMeshTangent> Tangents;
+
+
+
 
 };
