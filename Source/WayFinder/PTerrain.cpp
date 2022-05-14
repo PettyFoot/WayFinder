@@ -4,6 +4,9 @@
 #include "PTerrain.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "KismetProceduralMeshLibrary.h"
+#include "DrawDebugHelpers.h"
+#include "Engine/StaticMesh.h"
+#include "Components/BoxComponent.h"
 #include "Materials/Material.h"
 
 // Sets default values
@@ -12,6 +15,10 @@ APTerrain::APTerrain()
 	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("GeneratedMesh"));
 	RootComponent = mesh;
 	mesh->bUseAsyncCooking = true;
+
+	WaterBox = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WaterBox"));
+	WaterBox->SetupAttachment(GetRootComponent());
+
 
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -49,7 +56,14 @@ void APTerrain::BeginPlay()
 
 	FTransform actor_trans;
 	bIsDestroyed = false;
-
+	WaterBox->AddLocalOffset(FVector(0.f, 0.f, 250.f));
+	WaterBox->SetWorldScale3D(FVector((this->PlainSize - 1) * this->TerrainScale, (this->PlainSize - 1) * this->TerrainScale, 2.f));
+	if (WaterMaterial)
+	{
+		WaterBox->SetMaterial(0, WaterMaterial);
+	}
+	WaterBox->SetHiddenInGame(false);
+	
 	//this->TerrainWorldLocation = UKismetMathLibrary::TransformLocation(actor_trans, GetActorLocation());
 	//this->TerrainWorldLocation = GetActorLocation();
 /*	UE_LOG(LogTemp, Warning, TEXT("x: %f"), TerrainWorldLocation.X);
@@ -294,6 +308,32 @@ void APTerrain::GenerateMeshFromWorld(TArray<FVector> vertices, TArray<int32> tr
 	this->mesh->ContainsPhysicsTriMeshData(true);
 }
 
+void APTerrain::GenerateFoliageSpawns(TArray<FVector> water_foliage_spawn_locations, TArray<FVector> meadow_foliage_spawn_locations, TArray<FVector> forest_foliage_spawn_locations,
+	TArray<FVector> foothill_foliage_spawn_locations, TArray<FVector> mountain_foliage_spawn_locations, FVector spawn_loc_world_offset)
+{
+	for (auto& water : water_foliage_spawn_locations)
+	{
+	
+		//GetWorld()->SpawnActor<A>
+		//DrawDebugSphere(GetWorld(), water, 16.f, 4, FColor::Red, false, 8.f);
+	}
+	for (auto& meadow : meadow_foliage_spawn_locations)
+	{
+		//DrawDebugSphere(GetWorld(), meadow, 16.f, 4, FColor::Red, false, 8.f);
+	}
+	for (auto& forest : forest_foliage_spawn_locations)
+	{
+		//DrawDebugSphere(GetWorld(), forest, 16.f, 4, FColor::Red, false, 8.f);
+	}
+	for (auto& foothill : foothill_foliage_spawn_locations)
+	{
+		//DrawDebugSphere(GetWorld(), foothill, 16.f, 4, FColor::Red, false, 8.f);
+	}
+	for (auto& mountain : mountain_foliage_spawn_locations)
+	{
+		//DrawDebugSphere(GetWorld(), mountain + spawn_loc_world_offset, 16.f, 25, FColor::Red, false, 8.f);
+	}
+}
 
 void APTerrain::SetTerrainScale()
 {

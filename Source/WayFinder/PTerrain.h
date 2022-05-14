@@ -10,6 +10,8 @@
 class UProceduralMeshComponent;
 class UCurveFloat;
 class UMaterial;
+class UBoxComponent;
+class APWorld;
 
 UENUM(BlueprintType)
 enum class ETerrainScale : uint8
@@ -59,6 +61,18 @@ public:
 
 	void DestroyTerrain();
 
+	APWorld* PWorld;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
+	UStaticMeshComponent* WaterBox;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
+		UMaterial* WaterMaterial;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
+	FVector WorldOffset;
+
+	
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -70,10 +84,12 @@ public:
 	/*void GenerateMeshFromWorld(TArray<FVector> vertices, TArray<int32> triangles, TArray<FLinearColor> vertex_colors, TArray<FVector> normals, TArray<FVector2D> uv0, TArray<FProcMeshTangent>tangents);*/
 	void GenerateMeshFromWorld(TArray<FVector> vertices, TArray<int32>triangles, TArray<FLinearColor>vertex_colors, TArray<FVector>normals, TArray<FVector2D>uv0, TArray<FProcMeshTangent>tangents);
 	
+	void GenerateFoliageSpawns(TArray<FVector> water_foliage_spawn_locations, TArray<FVector> meadow_foliage_spawn_locations, TArray<FVector> forest_foliage_spawn_locations,
+		TArray<FVector> foothill_foliage_spawn_locations, TArray<FVector> mountain_foliage_spawn_locations, FVector spawn_loc_world_offset);
+
 	void SetMeshMaterial(UMaterial* material);
 
 	void SetTerrainVectors(TArray<FVector> vertices, TArray<int32>triangles, TArray<FLinearColor>vertex_colors, TArray<FVector>normals, TArray<FVector2D>uv0, TArray<FProcMeshTangent>tangents);
-
 
 	void SetTerrainParams(int uv_scale, int plain_size, float terrain_scale, int seed, float scale, float power_value, int octaves, float persistence, float lacunarity,
 		float height_multiplier, UCurveFloat* height_adjustment_curve = nullptr);
@@ -130,11 +146,6 @@ protected:
 	void SetTerrainScale();
 
 	void CreateMesh(UProceduralMeshComponent* meshcomp);
-
-
-	
-
-	
 
 
 private:

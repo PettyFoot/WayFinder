@@ -5,22 +5,12 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "ProceduralMeshComponent.h"
+#include "PWorld.h"
 #include "ChunkGenerator.generated.h"
 
 class AGenerateThread;
 class APWorld;
 
-UENUM(BlueprintType) 
-enum class EBiome : uint8
-{
-	Biome_Water =0,
-	Biome_Meadow,
-	Biome_Forest,
-	Biome_FootHills,
-	Biome_Mountains,
-	Biome_Default
-
-};
 
 
 UCLASS()
@@ -62,7 +52,19 @@ public:
 	TMap<FVector, EBiome> VerticeBiomeMap;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
-		TArray<FVector> FoliageSpawnVertices;
+		TArray<FVector> WaterFoliageSpawnVertices;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
+		TArray<FVector> MeadowFoliageSpawnVertices;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
+		TArray<FVector> ForestFoliageSpawnVertices;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
+		TArray<FVector> FootHillFoliageSpawnVertices;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
+		TArray<FVector> MountainFoliageSpawnVertices;
 
 	//order in which vertices should be joined together creating a mesh of triangles
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
@@ -79,6 +81,9 @@ public:
 
 	void GetGenerationData(TArray<FVector>& out_vertices, TArray<int32>& out_triangles, TArray<FLinearColor>& out_vertex_colors, TArray<FVector>& out_normals, TArray<FVector2D>& out_uv0,
 		TArray<FProcMeshTangent>& out_tangents);
+
+	void GetFoliageSpawnLocations(TArray<FVector>& water_foliage_spawn_locations, TArray<FVector>& meadow_foliage_spawn_locations, TArray<FVector>& forest_foliage_spawn_locations,
+		TArray<FVector>& foothill_foliage_spawn_locations, TArray<FVector>& mountain_foliage_spawn_locations);
 
 
 	APWorld* PWorldOwner;
@@ -105,16 +110,15 @@ private:
 
 	void GenerateTerrainSingle();
 
-	void GenerateFoliageOnBiome();
+	void GenerateFoliageSpawnLocations();
+
+	void LocateBasedOnBiome(TArray<FVector>& biome_foliage_spawn_array, FVector vertice_point);
+
+
 
 public:
 
 	float rand_num;
-
-	FTimerHandle AlgorithmTestTimer;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
-	float TestTime = 100.f;
 
 	void SetGeneratorParams(int uv_scale, int plain_size, float terrain_scale, int seed, float scale, float power_value, int octaves, float persistence, float lacunarity, float height_multiplier, UCurveFloat* height_adjustment_curve = nullptr);
 

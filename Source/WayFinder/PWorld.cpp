@@ -345,6 +345,7 @@ void APWorld::Generating(TArray<FVector2D> generation_order, int player_idx)
 	if (this->ChunkGenerator->bIsDone && this->bIsGenerating)
 	{
 		this->ChunkGenerator->GetGenerationData(this->Vertices, this->Triangles, this->VertexColors, this->Normals, this->UV0, this->Tangents);
+		this->ChunkGenerator->GetFoliageSpawnLocations(WaterFoliageSpawnVertices, MeadowFoliageSpawnVertices, ForestFoliageSpawnVertices, FootHillFoliageSpawnVertices, MountainFoliageSpawnVertices);
 
 		float xx = (PlayersInGameLastLocation[player_idx].X + generation_order[GenerationCurrent].X) * ((this->PlainSize - 1) * this->TerrainScale);
 		float yy = (PlayersInGameLastLocation[player_idx].Y + generation_order[GenerationCurrent].Y) * ((this->PlainSize - 1) * this->TerrainScale);
@@ -355,9 +356,16 @@ void APWorld::Generating(TArray<FVector2D> generation_order, int player_idx)
 		if (generated_actor)
 		{
 			//UE_LOG(LogTemp, Warning, TEXT("ACTOR"));
-			generated_actor->SetActorLocation(FVector(xx, yy, 0));
+			FVector spawn_loc(xx, yy, 0);
+			generated_actor->SetActorLocation(spawn_loc);
+			generated_actor->PWorld = this;
+			generated_actor->WorldOffset = this->WorldOffset;
+			if(this->WaterMaterial){ generated_actor->WaterMaterial = this->WaterMaterial;}
+			if (this->WaterBox) { generated_actor->WaterBox->SetStaticMesh(WaterBox); }
 			generated_actor->SetTerrainParams(this->UVScale, this->PlainSize, this->TerrainScale, this->Seed, this->Scale, this->PowerValue, this->Octaves, this->Persistence, this->Lacunarity, this->HeightMultiplier, this->HeightAdjustmentCurve);
 			generated_actor->GenerateMeshFromWorld(this->Vertices, this->Triangles, this->VertexColors, this->Normals, this->UV0, this->Tangents);
+			generated_actor->GenerateFoliageSpawns(WaterFoliageSpawnVertices, MeadowFoliageSpawnVertices, ForestFoliageSpawnVertices, FootHillFoliageSpawnVertices, 
+				MountainFoliageSpawnVertices, spawn_loc);
 			if (this->LandscapeMaterial)
 			{
 				generated_actor->SetMeshMaterial(this->LandscapeMaterial);

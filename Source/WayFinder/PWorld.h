@@ -6,11 +6,24 @@
 #include "GameFramework/Actor.h"
 #include "ProceduralMeshComponent.h"
 #include "Materials/Material.h"
+
 #include "PWorld.generated.h"
 
 class APTerrain;
 class AChunkGenerator;
 class AWayFinderCharacter;
+
+UENUM(BlueprintType)
+enum class EBiome : uint8
+{
+	Biome_Water = 0,
+	Biome_Meadow,
+	Biome_Forest,
+	Biome_FootHills,
+	Biome_Mountains,
+	Biome_Default
+
+};
 
 struct TerrainGenerationOrder {
 	TArray<FVector2D> Up;
@@ -157,9 +170,10 @@ struct FNoiseFilter
 			frequency *= NoiseSetting.Lacunarity;
 			amplitude *= NoiseSetting.Persistence;
  		}
+		//Lowers base heigt (creates a floor of sorts)
 		noise_val = FMath::Pow(noise_val, NoiseSetting.PowerValue);
 		//UE_LOG(LogTemp, Warning, TEXT("perlin Noisefilter: %f"), noise_val * NoiseSetting.HeightMultiplier);
-		return noise_val * NoiseSetting.HeightMultiplier;
+		return noise_val;
 	}
 
 
@@ -319,6 +333,16 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Paramaters", meta = (AllowPrivateAccess = "true"))
 	UMaterial* LandscapeMaterial;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
+		UMaterial* WaterMaterial;
+
+	//clear later
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
+		FVector WorldOffset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
+		UStaticMesh* WaterBox;
+
 	bool bShouldCleanUp;
 
 	//vertices matrix (x,y,z)
@@ -326,7 +350,19 @@ protected:
 	TArray<FVector> Vertices;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
-	TArray<FVector> FoliageSpawnVertices;
+	TArray<FVector> WaterFoliageSpawnVertices;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
+		TArray<FVector> MeadowFoliageSpawnVertices;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
+		TArray<FVector> ForestFoliageSpawnVertices;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
+		TArray<FVector> FootHillFoliageSpawnVertices;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
+		TArray<FVector> MountainFoliageSpawnVertices;
 
 	//order in which vertices should be joined together creating a mesh of triangles
 UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")

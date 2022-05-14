@@ -4,7 +4,8 @@
 #include "ChunkGenerator.h"
 #include "KismetProceduralMeshLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "PWorld.h"
+#include "DrawDebugHelpers.h"
+//#include "PWorld.h"
 //#include "Kismet/GameplayStatics.h"
 #include "GenerateThread.h"
 
@@ -54,6 +55,15 @@ void AChunkGenerator::GetGenerationData(TArray<FVector>& out_vertices, TArray<in
 	out_tangents = this->Tangents;
 	out_uv0 = this->UV0;
 
+}
+
+void AChunkGenerator::GetFoliageSpawnLocations(TArray<FVector>& water_foliage_spawn_locations, TArray<FVector>& meadow_foliage_spawn_locations, TArray<FVector>& forest_foliage_spawn_locations, TArray<FVector>& foothill_foliage_spawn_locations, TArray<FVector>& mountain_foliage_spawn_locations)
+{
+	water_foliage_spawn_locations = WaterFoliageSpawnVertices;
+	meadow_foliage_spawn_locations = MeadowFoliageSpawnVertices;
+	forest_foliage_spawn_locations = ForestFoliageSpawnVertices;
+	foothill_foliage_spawn_locations = FootHillFoliageSpawnVertices;
+	mountain_foliage_spawn_locations = MountainFoliageSpawnVertices;
 }
 
 void AChunkGenerator::GenerateTerrain()
@@ -122,6 +132,8 @@ void AChunkGenerator::GenerateTerrain()
 
 	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Vertices, Triangles, UV0, Normals, Tangents);
 
+
+	GenerateFoliageSpawnLocations();
 }
 
 void AChunkGenerator::GenerateTerrainLayered()
@@ -145,6 +157,7 @@ void AChunkGenerator::GenerateTerrainLayered()
 			FVector2D sample(sampleX, sampleY);
 
 			float noise_first_layer = PWorldOwner->NoiseFilters[0].EvaluatePoint(sample);
+			float biome_sort = 0.f;
 
 			if (PWorldOwner->NoiseFilters[0].bIsEnabled)
 			{
@@ -166,13 +179,15 @@ void AChunkGenerator::GenerateTerrainLayered()
 							mask = noise_first_layer;
 						}
 					}
-					perlin_value += PWorldOwner->NoiseFilters[i].EvaluatePoint(sample) * mask;
-					//UE_LOG(LogTemp, Warning, TEXT("perlin chunkgenerator: %f"), perlin_value);
+					biome_sort += PWorldOwner->NoiseFilters[i].EvaluatePoint(sample);
+					perlin_value += biome_sort * PWorldOwner->NoiseFilters[i].NoiseSetting.HeightMultiplier * mask;
 				}
 			}
 		
 
+
 			Vertices[idx] = FVector((x * this->TerrainScale), (y * this->TerrainScale), perlin_value);
+			VerticeBiomeMap.Add(Vertices[idx], SortBiome(biome_sort));
 			VertexColors[idx] = FLinearColor(0, 0, 0, perlin_value);
 			UV0[idx] = FVector2D(x * (TerrainScale * UVScale) / this->TerrainScale, 
 				y * (TerrainScale * UVScale) / this->TerrainScale);
@@ -233,6 +248,68 @@ void AChunkGenerator::GenerateTerrainSingle()
 	}
 }
 
+void AChunkGenerator::GenerateFoliageSpawnLocations()
+{
+	int FoliageSpawnAdjuster = 6;
+	int NumberVerticesToGenerateAround = this->Vertices.Num() / FoliageSpawnAdjuster;
+	int idx = 0;
+	/*for (int i = 0; i < VerticeBiomeMap.Num(); i++)
+	{
+		VerticeBiomeMap.
+	}*/
+	for (auto& vertice : VerticeBiomeMap)
+	{
+		if (idx == FoliageSpawnAdjuster)
+		{
+			idx = 0;
+			switch (vertice.Value)
+			{
+			case EBiome::Biome_Water:
+				LocateBasedOnBiome(this->WaterFoliageSpawnVertices, vertice.Key);
+				break;
+			case EBiome::Biome_Meadow:
+				LocateBasedOnBiome(this->MeadowFoliageSpawnVertices, vertice.Key);
+				break;
+			case EBiome::Biome_Forest:
+				LocateBasedOnBiome(this->ForestFoliageSpawnVertices, vertice.Key);
+				break;
+			case EBiome::Biome_FootHills:
+				LocateBasedOnBiome(this->FootHillFoliageSpawnVertices, vertice.Key);
+				break;
+			case EBiome::Biome_Mountains:
+				LocateBasedOnBiome(this->MountainFoliageSpawnVertices, vertice.Key);
+				break;
+			case EBiome::Biome_Default:
+
+				break;
+			default:
+
+				break;
+			}
+		}
+
+		idx++;
+	}
+}
+
+void AChunkGenerator::LocateBasedOnBiome(TArray<FVector>& biome_foliage_spawn_array, FVector vertice_point)
+{
+	float base_probe_length = 25.f;
+	float scale = FMath::FRandRange(1.5f, 4.f);
+	float x_adj = FMath::FRandRange(-4, 4.f);
+	float y_adj = FMath::FRandRange(-4, 4.f);
+	if (x_adj < 1.5 && x_adj > 0) { x_adj = 1.5; }
+	else if (x_adj > -1.5 && x_adj <= 0) { x_adj = -1.5; }
+	if (y_adj < 1.5 && y_adj > 0) { y_adj = 1.5; }
+	else if (y_adj > -1.5 && y_adj <= 0) { y_adj = -1.5; }
+
+	FVector end_loc((vertice_point.X + (base_probe_length * x_adj)), (vertice_point.Y + (base_probe_length * y_adj)), vertice_point.Z);
+	//DrawDebugSphere(GetWorld(), end_loc, 16.f, 4, FColor::Red, false, 8.f);
+	//UE_LOG(LogTemp, Warning, TEXT("end location: (%f, %f, %f) "), end_loc.X, end_loc.Y, end_loc.Z);
+	biome_foliage_spawn_array.Add(end_loc);
+
+}
+
 void AChunkGenerator::EndGeneration()
 {
 	this->bIsDone = true;
@@ -254,8 +331,33 @@ void AChunkGenerator::ResetArrays()
 
 EBiome AChunkGenerator::SortBiome(float in_val)
 {
-	float num = in_val
-	return EBiome();
+	
+		if (in_val < 0.1 && in_val >= 0.0)
+		{
+			return EBiome::Biome_Water;
+		}
+		else if (in_val >= 0.1 && in_val < 0.35)
+		{
+			return EBiome::Biome_Meadow;
+		}
+		else if (in_val >= 0.35 && in_val < 0.50)
+		{
+			return EBiome::Biome_Forest;
+		}
+		else if (in_val >= 0.5 && in_val < 0.65f)
+		{
+			return EBiome::Biome_FootHills;
+		}
+		else if (in_val >= 0.65 && in_val < 1.f)
+		{
+			return EBiome::Biome_Mountains;
+		}
+		else
+		{
+			return EBiome::Biome_Default;
+			UE_LOG(LogTemp, Warning, TEXT("FNoiseFilter::EvaluatedPointBiome()__ Biome set to Default because evluated point was not between 0 and 1 "))
+		}
+	
 }
 
 void AChunkGenerator::EndPlay(const EEndPlayReason::Type EndPlayReason)
