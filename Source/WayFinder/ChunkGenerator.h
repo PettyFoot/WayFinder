@@ -24,6 +24,9 @@ public:
 
 public:	
 
+	float range;
+	float bounds;
+
 	//print current calcs in queue
 	void PrintCalcData();
 

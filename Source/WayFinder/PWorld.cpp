@@ -5,6 +5,8 @@
 #include "ChunkGenerator.h"
 #include "PTerrain.h"
 #include "Kismet/GameplayStatics.h"
+#include "Materials/MaterialInstance.h"
+
 #include "WayFinderCharacter.h"
 
 // Sets default values
@@ -12,6 +14,7 @@ APWorld::APWorld()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	
 	GenerateDistance = 1;
 	bShouldStartGenerationCheck = false;
 	bIsGenerating = false;
@@ -22,20 +25,24 @@ APWorld::APWorld()
 
 }
 
+
 // Called when the game starts or when spawned
 void APWorld::BeginPlay()
 {
 	Super::BeginPlay();
 
 	
-	this->SetGenerationOrder();
 
 	this->ChunkGenerator = GetWorld()->SpawnActor<AChunkGenerator>(AChunkGenerator::StaticClass());
 	if (!ChunkGenerator)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No chunk generator"));
 	}
-	else { this->ChunkGenerator->PWorldOwner = this; }
+	else {
+		this->ChunkGenerator->PWorldOwner = this;
+		this->ChunkGenerator->range = this->range; //for foliage spawn max random spawn scale
+		this->ChunkGenerator->bounds = this->bounds; //for foliage spawn random spawn min bounds scale
+	}
 
 
 
@@ -62,33 +69,43 @@ void APWorld::BeginPlay()
 
 }
 
+
 // Called every frame
 void APWorld::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	//If level has opened but not players are loaded in (mainly targeted towards multiplayer situations)
+	//if (!this->bShouldStartGenerationCheck)
+	//{
+	//	GetWorldPlayers();
+	//}
 
+	//if no terrain to generate check players location to check if generation is needed
 	if (!this->bShouldGenerateTerrain)
 	{
 		this->CheckShouldGenerateTerrain();
 	}
 	
+	//If terrain should be generated generate terrain
 	if (bShouldGenerateTerrain)
 	{
-		
 		this->GenerateTerrain();
-	
 	}
+
+	//If should try deleting chunks and is not still generating chunks try to clean up
 	if (bShouldCleanUp && !bIsGenerating)
 	{
 		this->CleanUpTerrain();
-		this->bShouldCleanUp = false;
+		this->bShouldCleanUp = false; //Only one iteration is necessary, reset for after next generation event
 	}
 
 }
 
+
 void APWorld::CheckShouldGenerateTerrain()
 {
+	//enabled when a player is found by PWorld, otherwise no generation checks should happen
 	if (!this->bShouldStartGenerationCheck) { return; }
 
 	int playeridx = 0;
@@ -109,6 +126,7 @@ void APWorld::CheckShouldGenerateTerrain()
 	
 }
 
+
 FVector2D APWorld::CheckPlayerLocation(FVector players_location)
 {
 	x_pos = players_location.X / (((this->PlainSize - 1)) * this->TerrainScale);
@@ -118,6 +136,7 @@ FVector2D APWorld::CheckPlayerLocation(FVector players_location)
 	return FVector2D(x_pos, y_pos);
 
 }
+
 
 void APWorld::GenerateTerrain()
 {
@@ -161,59 +180,74 @@ void APWorld::GenerateTerrain()
 			this->Generating(this->TerrainGenerationOrderStruct.UpRight, playeridx);
 
 			break;
+		case EDirection::D_Starting:
+			this->Generating(this->TerrainGenerationOrderStruct.Start, playeridx);
+
+			break;
 		default:
 			break;
 		}
 		playeridx++;
 	}
-
-
-	
-
-
-
-
-
-
-
 			
 }
 
+
+void APWorld::GenerateTerrainStart()
+{
+	if (this->bShouldStartGenerationCheck)
+	{
+		this->bShouldGenerateTerrain = true;
+		this->Direction = EDirection::D_Starting;
+	}
+}
+
+
 void APWorld::CleanUpTerrain()
 {
-	
+	//iterate through each player location in the world
 	for (auto& location : this->PlayersInGameLastLocation)
 	{
+		//Check if any of the generated terrain chunks are further then the generation distanc threshold and delete if so
+		//this will not work for players far apart because their chunks will be deleted
+		//Could solve by each player having a list of terrain chunks they have generated and check with that list
+		// would require more data to be held by player, but still not tons
+		//Could have a min distance to be within to check terrain chunks for deletion
 		for (int i = 0; i < this->GeneratedTerrainChunks.Num(); i++)
 		{
+			//See if terrain's isdestroyed flag has been enabled 
+			//needed to do this so the index would be cleared and deleted, otherwise array never shrank and got very large (full of null actors)
 			if (this->GeneratedTerrainChunks[i]->bIsDestroyed != true)
 			{
+				//compare terrain chunk location to current player location
 				int x = (this->GeneratedTerrainChunks[i]->GetActorLocation().X / ((this->PlainSize - 1) * this->TerrainScale)) - location.X;
 				int y = (this->GeneratedTerrainChunks[i]->GetActorLocation().Y / ((this->PlainSize - 1) * this->TerrainScale)) - location.Y;
 				if (x < -GenerateDistanceThreshold || x > GenerateDistanceThreshold || y < -GenerateDistanceThreshold || y > GenerateDistanceThreshold)
 				{
 					
 					//this->GeneratedTerrainChunkLocations.Remove(FVector2D(GeneratedTerrainChunks[i]->GetActorLocation().X, GeneratedTerrainChunks[i]->GetActorLocation().Y));
-					this->GeneratedTerrainChunks[i]->DestroyTerrain();
+					this->GeneratedTerrainChunks[i]->DestroyTerrain();//Set terrains isDestroyed flag to true
 				}
 			}
 			else
 			{
+				//Destroy actor and remove index from array
 				this->GeneratedTerrainChunks[i]->Destroy();
 				this->GeneratedTerrainChunks.RemoveAt(i);
 			}
 			
 		}
+		//Shrink array at end of each player location check
 		this->GeneratedTerrainChunks.Shrink();
 	}
 	
 }
 
+
 void APWorld::GetWorldPlayers()
 {
 	TArray<AActor*> actors;
 	UGameplayStatics::GetAllActorsOfClass(this, CharacterClass, actors);
-	this->PlayersInGameLastLocation.SetNum(actors.Num());
 	int playeridx = 0;
 	for (auto& actor : actors)
 	{
@@ -221,12 +255,12 @@ void APWorld::GetWorldPlayers()
 		if (player_char)
 		{
 			this->PlayersInGame.Add(player_char);
-			int x = player_char->GetActorLocation().X / ((this->PlainSize - 1) * this->TerrainScale);
-			int y = player_char->GetActorLocation().Y / ((this->PlainSize - 1) * this->TerrainScale);
+			x_pos = player_char->GetActorLocation().X / ((this->PlainSize - 1) * this->TerrainScale);
+			y_pos  = player_char->GetActorLocation().Y / ((this->PlainSize - 1) * this->TerrainScale);
 			if (player_char->GetActorLocation().X < 0) { x_pos -= 1; }
 			if (player_char->GetActorLocation().Y < 0) { y_pos -= 1; }
 
-			this->PlayersInGameLastLocation[playeridx] = FVector2D(x, y);
+			this->PlayersInGameLastLocation.Add(FVector2D(x_pos, y_pos));
 			this->bShouldStartGenerationCheck = true;
 		}
 		playeridx++;
@@ -236,9 +270,16 @@ void APWorld::GetWorldPlayers()
 	if (PlayersInGame.Num() <= 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("APWorld::BeginPlay__ No players found, need player to generate world"));
+		GetWorldPlayers();
+	}
+	else
+	{
+		this->GenerateTerrainStart();
 	}
 
+
 }
+
 
 void APWorld::FindPlayerDirection(FVector2D player_loc_last)
 {
@@ -308,12 +349,14 @@ void APWorld::FindPlayerDirection(FVector2D player_loc_last)
 
 }
 
+
 void APWorld::SetGenerationOrder()
 {
 	
 
 
 }
+
 
 void APWorld::Generating(TArray<FVector2D> generation_order, int player_idx)
 {
@@ -322,72 +365,95 @@ void APWorld::Generating(TArray<FVector2D> generation_order, int player_idx)
 		//UE_LOG(LogTemp, Warning, TEXT("Began Generation"));
 		this->ChunkGenerator->rand_num = FMath::RandRange(0, 1);
 		
-		bool bShouldThread = true;
+		
+		bool bShouldThread = true; //Set thread enabled (default)
+		//Find terrain to be generated world location (grid location + generation order grid location * plainsize * terrain scale)
 		float xx = (PlayersInGameLastLocation[player_idx].X + generation_order[GenerationCurrent].X) * ((this->PlainSize - 1) * this->TerrainScale);
 		float yy = (PlayersInGameLastLocation[player_idx].Y + generation_order[GenerationCurrent].Y) * ((this->PlainSize - 1) * this->TerrainScale);
-		for (auto& generatedchunks : this->GeneratedTerrainChunks)
+		/*for (auto& generatedchunks : this->GeneratedTerrainChunks)
 		{
+			//Attempt at a check to prevent duplicate spawning, needs tweaking
 			if (FVector2D(generatedchunks->GetActorLocation().X, generatedchunks->GetActorLocation().Y) == FVector2D(xx, yy))
 			{
-				bShouldThread = false;
-				this->GenerationCurrent++;
+				UE_LOG(LogTemp, Warning, TEXT("APWorld::Generating__ toGen: (%d)"), GenerationCurrent);
+				UE_LOG(LogTemp, Warning, TEXT("APWorld::Generating__ toGen: (%f, %f) -> terrain: (%f, %f)"), xx, yy, generatedchunks->GetActorLocation().X, generatedchunks->GetActorLocation().Y);
+				bShouldThread = false; // disable thread so terrain isn't generated
+				this->GenerationCurrent++; //increase generated terrain count (didn't actually generate but this process ends by generation count == generation count target)
+				UE_LOG(LogTemp, Warning, TEXT("APWorld::Generating__ should thread = false"));
 			}
-		}
+		}*/
 		if (bShouldThread)
 		{
 			this->ChunkGenerator->SetGeneratorLocation(FVector(xx, yy, 0));
-			this->ChunkGenerator->InitCalculations(1);
-			this->bIsGenerating = true;
+			this->ChunkGenerator->InitCalculations(1); //Start thread calculations
+			this->bIsGenerating = true; //enable check for thread done
 		}
 		
 	}
 
 	if (this->ChunkGenerator->bIsDone && this->bIsGenerating)
 	{
+		//Get mesh data
 		this->ChunkGenerator->GetGenerationData(this->Vertices, this->Triangles, this->VertexColors, this->Normals, this->UV0, this->Tangents);
+		//Get foliage spawn location data
 		this->ChunkGenerator->GetFoliageSpawnLocations(WaterFoliageSpawnVertices, MeadowFoliageSpawnVertices, ForestFoliageSpawnVertices, FootHillFoliageSpawnVertices, MountainFoliageSpawnVertices);
 
+		//Find terrain to be generated world location (grid location + generation order grid location * plainsize * terrain scale)
 		float xx = (PlayersInGameLastLocation[player_idx].X + generation_order[GenerationCurrent].X) * ((this->PlainSize - 1) * this->TerrainScale);
 		float yy = (PlayersInGameLastLocation[player_idx].Y + generation_order[GenerationCurrent].Y) * ((this->PlainSize - 1) * this->TerrainScale);
 		//UE_LOG(LogTemp, Warning, TEXT("Scale x: %f Scale y: %f"), xx, yy);
 		//this->GeneratedTerrainChunkLocations.Add(FVector2D(xx, yy));
-		APTerrain* generated_actor = this->GetWorld()->SpawnActor<APTerrain>(APTerrain::StaticClass());
+		APTerrain* generated_actor = this->GetWorld()->SpawnActor<APTerrain>(APTerrain::StaticClass()); //spawn terrain chunk
 
 		if (generated_actor)
 		{
 			//UE_LOG(LogTemp, Warning, TEXT("ACTOR"));
-			FVector spawn_loc(xx, yy, 0);
-			generated_actor->SetActorLocation(spawn_loc);
-			generated_actor->PWorld = this;
-			generated_actor->WorldOffset = this->WorldOffset;
-			if(this->WaterMaterial){ generated_actor->WaterMaterial = this->WaterMaterial;}
-			if (this->WaterBox) { generated_actor->WaterBox->SetStaticMesh(WaterBox); }
+			FVector spawn_loc(xx, yy, 0); 
+			generated_actor->SetActorLocation(spawn_loc); //Set spawn location to correct position
+			generated_actor->PWorld = this; //Set world owner of terrain
+			//FVector world_off = (FVector(xx - (xx (this->PlainSize - 1) * this->TerrainScale, ,))
+			generated_actor->WorldOffset = this->WorldOffset; //For water generation per chunk
+			if(this->WaterMaterial){ generated_actor->WaterMaterial = this->WaterMaterial;} //Set water material
+			if (this->WaterBox) { generated_actor->WaterBox->SetStaticMesh(WaterBox); } //Set water mesh
+			if (this->WaterMatInst)
+			{
+				//generated_actor->SetMeshMaterialI(this->WaterMatInst);
+				generated_actor->WaterBox->SetMaterial(0, this->WaterMatInst);
+			}
+
+			//Sets terrain chunks params
 			generated_actor->SetTerrainParams(this->UVScale, this->PlainSize, this->TerrainScale, this->Seed, this->Scale, this->PowerValue, this->Octaves, this->Persistence, this->Lacunarity, this->HeightMultiplier, this->HeightAdjustmentCurve);
+			//Generates terrain chunk with mesh data
 			generated_actor->GenerateMeshFromWorld(this->Vertices, this->Triangles, this->VertexColors, this->Normals, this->UV0, this->Tangents);
+			//Gives foliage spawn location arrays to terrain chunk (need to figure this system out more)
 			generated_actor->GenerateFoliageSpawns(WaterFoliageSpawnVertices, MeadowFoliageSpawnVertices, ForestFoliageSpawnVertices, FootHillFoliageSpawnVertices, 
 				MountainFoliageSpawnVertices, spawn_loc);
+			//Apply landscape auto mat
 			if (this->LandscapeMaterial)
 			{
 				generated_actor->SetMeshMaterial(this->LandscapeMaterial);
 			}
+			
 			//UE_LOG(LogTemp, Warning, TEXT("Size: %d"), Vertices.Num());
 			//UE_LOG(LogTemp, Warning, TEXT("Size: %d"), Triangles.Num());
 			//UE_LOG(LogTemp, Warning, TEXT("Size: %d"), Normals.Num());
 
 		}
-		this->GeneratedTerrainChunks.Add(generated_actor);
+		this->GeneratedTerrainChunks.Add(generated_actor); 
 		this->GenerationCurrent++;
-		this->bIsGenerating = false;
+		this->bIsGenerating = false; //disable is generating to allow for more terrain chunk generation
 		//UE_LOG(LogTemp, Warning, TEXT("Generated One piece of terrain"));
 	}
 
-	
+
+	//end of generation cycle
 	if (GenerationCurrent >= generation_order.Num() * this->GenerateDistance)
 	{
-		bIsGenerating = false;
+		//reset all flags and counters
+		bIsGenerating = false; 
 		this->bShouldGenerateTerrain = false;
 		this->GenerationCurrent = 0;
-		this->bShouldCleanUp = true;
+		this->bShouldCleanUp = true; //Enable the deletion of terrain chunks
 		//UE_LOG(LogTemp, Warning, TEXT("End of generation"));
 	}
 }

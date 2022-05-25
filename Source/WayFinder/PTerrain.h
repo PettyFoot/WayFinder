@@ -24,23 +24,7 @@ enum class ETerrainScale : uint8
 };
 
 
-USTRUCT(BlueprintType)
-struct FNoiseMap
-{
-	GENERATED_BODY()
 
-	TArray<float> Y;
-	TArray<float> X;
-
-	FNoiseMap() {}
-
-	FNoiseMap(int32 map_width, int32 map_height)
-	{
-		this->X.SetNum(map_width);
-		this->Y.SetNum(map_height);
-	}
-
-};
 
 UCLASS()
 class WAYFINDER_API APTerrain : public AActor
@@ -56,11 +40,14 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
+
+
 	
 	bool bIsDestroyed;
 
 	void DestroyTerrain();
 
+	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
 	APWorld* PWorld;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
@@ -80,6 +67,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 	FVector TerrainWorldLocation;
 
+	
+	void GenerateFoliage(TArray<FVector> foliage_locations, TArray<UStaticMesh*> foliage_meshes);
+
 
 	/*void GenerateMeshFromWorld(TArray<FVector> vertices, TArray<int32> triangles, TArray<FLinearColor> vertex_colors, TArray<FVector> normals, TArray<FVector2D> uv0, TArray<FProcMeshTangent>tangents);*/
 	void GenerateMeshFromWorld(TArray<FVector> vertices, TArray<int32>triangles, TArray<FLinearColor>vertex_colors, TArray<FVector>normals, TArray<FVector2D>uv0, TArray<FProcMeshTangent>tangents);
@@ -93,6 +83,7 @@ public:
 
 	void SetTerrainParams(int uv_scale, int plain_size, float terrain_scale, int seed, float scale, float power_value, int octaves, float persistence, float lacunarity,
 		float height_multiplier, UCurveFloat* height_adjustment_curve = nullptr);
+
 
 protected:
 
@@ -136,10 +127,25 @@ protected:
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 	TArray<FProcMeshTangent> Tangents;
 
+
+	UPROPERTY(BlueprintReadWrite, Category = "Mesh Paramaters")
+		TArray<FVector> WaterFoliageSpawnVertices;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Mesh Paramaters")
+		TArray<FVector> MeadowFoliageSpawnVertices;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Mesh Paramaters")
+		TArray<FVector> ForestFoliageSpawnVertices;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Mesh Paramaters")
+		TArray<FVector> FootHillFoliageSpawnVertices;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Mesh Paramaters")
+		TArray<FVector> MountainFoliageSpawnVertices;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
 	ETerrainScale TerrianFidelity;
 
-	
 
 	int SizePlane;
 

@@ -5,6 +5,8 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "KismetProceduralMeshLibrary.h"
 #include "DrawDebugHelpers.h"
+#include "PWorld.h"
+#include "Engine/StaticMeshActor.h"
 #include "Engine/StaticMesh.h"
 #include "Components/BoxComponent.h"
 #include "Materials/Material.h"
@@ -56,13 +58,16 @@ void APTerrain::BeginPlay()
 
 	FTransform actor_trans;
 	bIsDestroyed = false;
-	WaterBox->AddLocalOffset(FVector(0.f, 0.f, 250.f));
-	WaterBox->SetWorldScale3D(FVector((this->PlainSize - 1) * this->TerrainScale, (this->PlainSize - 1) * this->TerrainScale, 2.f));
+	float x_o = ((this->PlainSize - 1) * this->TerrainScale);
+	WaterBox->AddLocalOffset(FVector(x_o * x_o / 2.f, x_o * x_o / 2.f, 250.f));
+	float ps = (PlainSize * 1.f) - 1.5;
+	WaterBox->SetWorldScale3D(FVector(ps * (this->TerrainScale) - this->TerrainScale * 0.435f, ps * (this->TerrainScale) - this->TerrainScale * 0.435f, 3.f));
 	if (WaterMaterial)
 	{
 		WaterBox->SetMaterial(0, WaterMaterial);
 	}
 	WaterBox->SetHiddenInGame(false);
+	WaterBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
 	//this->TerrainWorldLocation = UKismetMathLibrary::TransformLocation(actor_trans, GetActorLocation());
 	//this->TerrainWorldLocation = GetActorLocation();
@@ -311,28 +316,55 @@ void APTerrain::GenerateMeshFromWorld(TArray<FVector> vertices, TArray<int32> tr
 void APTerrain::GenerateFoliageSpawns(TArray<FVector> water_foliage_spawn_locations, TArray<FVector> meadow_foliage_spawn_locations, TArray<FVector> forest_foliage_spawn_locations,
 	TArray<FVector> foothill_foliage_spawn_locations, TArray<FVector> mountain_foliage_spawn_locations, FVector spawn_loc_world_offset)
 {
-	for (auto& water : water_foliage_spawn_locations)
-	{
+	//UE_LOG(LogTemp, Warning, TEXT("water: %d"), water_foliage_spawn_locations.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("meadow: %d"), meadow_foliage_spawn_locations.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("forest: %d"), forest_foliage_spawn_locations.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("fotohill: %d"), foothill_foliage_spawn_locations.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("mtn: %d"), mountain_foliage_spawn_locations.Num());
+
+	this->WaterFoliageSpawnVertices = water_foliage_spawn_locations;
+	this->MeadowFoliageSpawnVertices = meadow_foliage_spawn_locations;
+	this->ForestFoliageSpawnVertices = forest_foliage_spawn_locations;
+	this->FootHillFoliageSpawnVertices = foothill_foliage_spawn_locations;
+	this->MountainFoliageSpawnVertices = mountain_foliage_spawn_locations;
+
+	int total = WaterFoliageSpawnVertices.Num() + MeadowFoliageSpawnVertices.Num() + ForestFoliageSpawnVertices.Num() + FootHillFoliageSpawnVertices.Num() + MountainFoliageSpawnVertices.Num();
+	UE_LOG(LogTemp, Warning, TEXT("total foliage %d"), total);
+	this->GenerateFoliage(this->WaterFoliageSpawnVertices, PWorld->WaterFoliageSpawn);
+	this->WaterFoliageSpawnVertices.Empty();
+	this->GenerateFoliage(this->MeadowFoliageSpawnVertices, PWorld->MeadowFoliageSpawn);
+	this->MeadowFoliageSpawnVertices.Empty();
+	this->GenerateFoliage(this->ForestFoliageSpawnVertices, PWorld->ForestFoliageSpawn);
+	this->ForestFoliageSpawnVertices.Empty();
+	this->GenerateFoliage(this->FootHillFoliageSpawnVertices, PWorld->FootHillFoliageSpawn);
+	this->FootHillFoliageSpawnVertices.Empty();
+	this->GenerateFoliage(this->MountainFoliageSpawnVertices, PWorld->MountainFoliageSpawn);
+	this->MountainFoliageSpawnVertices.Empty();
 	
-		//GetWorld()->SpawnActor<A>
-		//DrawDebugSphere(GetWorld(), water, 16.f, 4, FColor::Red, false, 8.f);
-	}
-	for (auto& meadow : meadow_foliage_spawn_locations)
+}
+
+void APTerrain::GenerateFoliage(TArray<FVector> foliage_locations, TArray<UStaticMesh*> foliage_meshes)
+{
+	if (foliage_meshes.Num() <= 0) { UE_LOG(LogTemp, Warning, TEXT("APTERRAIN::GenerateFoliage__ No foliage meshes to spawn")); return; }
+
+	for (FVector foliage : foliage_locations)
 	{
-		//DrawDebugSphere(GetWorld(), meadow, 16.f, 4, FColor::Red, false, 8.f);
+		if (PWorld && PWorld->FoliageClass)
+		{
+			//AStati
+			//AStaticMeshActor* spawned_foliage = GetWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), foliage, FRotator::ZeroRotator);
+			/*if (spawned_foliage)
+			{
+				//UE_LOG(LogTemp, Warning, TEXT("Spawned Foliage"))
+				int mesh_idx =FMath::RandRange(0, foliage_meshes.Num() -1);
+				spawned_foliage->GetStaticMeshComponent()->SetMobility(EComponentMobility::Movable);
+				//spawned_foliage->GetStaticMeshComponent()->SetStaticMesh(foliage_meshes[mesh_idx]);
+			}*/
+			//spawned_foliage->
+		}
+		
 	}
-	for (auto& forest : forest_foliage_spawn_locations)
-	{
-		//DrawDebugSphere(GetWorld(), forest, 16.f, 4, FColor::Red, false, 8.f);
-	}
-	for (auto& foothill : foothill_foliage_spawn_locations)
-	{
-		//DrawDebugSphere(GetWorld(), foothill, 16.f, 4, FColor::Red, false, 8.f);
-	}
-	for (auto& mountain : mountain_foliage_spawn_locations)
-	{
-		//DrawDebugSphere(GetWorld(), mountain + spawn_loc_world_offset, 16.f, 25, FColor::Red, false, 8.f);
-	}
+
 }
 
 void APTerrain::SetTerrainScale()

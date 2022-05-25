@@ -12,6 +12,7 @@
 class APTerrain;
 class AChunkGenerator;
 class AWayFinderCharacter;
+class UMaterialInstance;
 
 UENUM(BlueprintType)
 enum class EBiome : uint8
@@ -25,6 +26,20 @@ enum class EBiome : uint8
 
 };
 
+USTRUCT(BlueprintType)
+struct FBiome
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+	EBiome Biome;
+
+	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
+	int BiomeFoliageDensity;
+
+
+};
+
 struct TerrainGenerationOrder {
 	TArray<FVector2D> Up;
 	TArray<FVector2D> UpLeft;
@@ -34,6 +49,7 @@ struct TerrainGenerationOrder {
 	TArray<FVector2D> DownRight;
 	TArray<FVector2D> Right;
 	TArray<FVector2D> UpRight;
+	TArray<FVector2D> Start;
 
 	TerrainGenerationOrder()
 	{
@@ -50,7 +66,6 @@ struct TerrainGenerationOrder {
 		UpLeft[4] = FVector2D(1, -1);
 
 		Left.SetNum(4);
-
 		Left[0] = FVector2D(1, -1);
 		Left[1] = FVector2D(1, 0);
 		Left[2] = FVector2D(1, 1);
@@ -87,6 +102,18 @@ struct TerrainGenerationOrder {
 		UpRight[2] = FVector2D(1, 1);
 		UpRight[3] = FVector2D(0, 1);
 		UpRight[4] = FVector2D(-1, 1);
+
+		Start.SetNum(9);
+		Start[0] = FVector2D(0, 0);
+		Start[1] = FVector2D(0, 1);
+		Start[2] = FVector2D(-1, 1);
+		Start[3] = FVector2D(-1, 0);
+		Start[4] = FVector2D(-1, -1);
+		Start[5] = FVector2D(0, -1);
+		Start[6] = FVector2D(1, -1);
+		Start[7] = FVector2D(1, 0);
+		Start[8] = FVector2D(1, 1);
+		
 		
 	}
 
@@ -188,7 +215,8 @@ enum class EDirection {
 	D_Down,
 	D_DownRight,
 	D_Right,
-	D_UpRight
+	D_UpRight,
+	D_Starting
 };
 
 UCLASS()
@@ -212,8 +240,11 @@ public:
 	bool bShouldGenerateTerrain;
 	bool bShouldStartGenerationCheck;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Paramaters", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Paramaters")
 		TArray<FNoiseFilter> NoiseFilters;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Foliage Paramaters")
+	TSubclassOf<AActor> FoliageClass;
 
 private:
 
@@ -222,6 +253,8 @@ private:
 	FVector2D CheckPlayerLocation(FVector players_location);
 
 	void GenerateTerrain();
+
+	void GenerateTerrainStart();
 
 	void CleanUpTerrain();
 
@@ -232,6 +265,24 @@ private:
 	void SetGenerationOrder();
 
 	void Generating(TArray<FVector2D> generation_order,int player_idx);
+
+public:
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Foliage Paramaters")
+		TArray<UStaticMesh*> WaterFoliageSpawn;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Foliage Paramaters")
+		TArray<UStaticMesh*> MeadowFoliageSpawn;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Foliage Paramaters")
+		TArray<UStaticMesh*> ForestFoliageSpawn;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Foliage Paramaters")
+		TArray<UStaticMesh*> FootHillFoliageSpawn;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Foliage Paramaters")
+		TArray<UStaticMesh*> MountainFoliageSpawn;
 
 private:
 
@@ -269,6 +320,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
 		float PowerValue;
 
+	//for foliage spawn max random spawn scale
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Foliage Paramaters", meta = (AllowPrivateAccess = "true"))
+	float range;
+
+	//for foliage spawn random spawn min bounds scale
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Foliage Paramaters", meta = (AllowPrivateAccess = "true"))
+	float bounds;
+
 	//Adjusts definition of noise sample
 	//adds more bumps
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
@@ -289,6 +348,8 @@ protected:
 	//Curve to adjust for height values
 	UPROPERTY(EditAnywhere, Category = "Mesh Paramaters")
 		UCurveFloat* HeightAdjustmentCurve;
+
+	
 
 	//Distance player has to be from new terrain chunk to generate chunk
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Parameters", meta = (AllowPrivateAccess = "true"))
@@ -336,6 +397,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
 		UMaterial* WaterMaterial;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
+	UMaterialInstance* WaterMatInst;
+
 	//clear later
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters", meta = (AllowPrivateAccess = "true"))
 		FVector WorldOffset;
@@ -363,6 +427,8 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Mesh Paramaters")
 		TArray<FVector> MountainFoliageSpawnVertices;
+
+
 
 	//order in which vertices should be joined together creating a mesh of triangles
 UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh Paramaters")
