@@ -157,7 +157,17 @@ void AChunkGenerator::GenerateTerrainLayered()
 			float sampleY = (y + temp1);
 			FVector2D sample(sampleX, sampleY);
 
-			float noise_first_layer = PWorldOwner->NoiseFilters[0].EvaluatePoint(sample);
+			float noise_first_layer = 0.f;
+
+			if (PWorldOwner->NoiseFilters[0].bUseDomainDistortion)
+			{
+				noise_first_layer = PWorldOwner->NoiseFilters[0].EvaluatePointDomainDistorted(sample);
+			}
+			else
+			{
+				noise_first_layer = PWorldOwner->NoiseFilters[0].EvaluatePoint(sample);
+			}
+		
 
 			if (PWorldOwner->NoiseFilters[0].bIsEnabled)
 			{
@@ -175,11 +185,30 @@ void AChunkGenerator::GenerateTerrainLayered()
 					{
 						if (i - 1 > -1)
 						{
-							noise_first_layer = PWorldOwner->NoiseFilters[i - 1].EvaluatePoint(sample);
+							if (PWorldOwner->NoiseFilters[i].bUseDomainDistortion)
+							{
+								noise_first_layer = PWorldOwner->NoiseFilters[i - 1].EvaluatePointDomainDistorted(sample);
+								//UE_LOG(LogTemp, Warning, TEXT("Evaluate point distored: %f"), noise_first_layer);
+							}
+							else
+							{
+								noise_first_layer = PWorldOwner->NoiseFilters[i - 1].EvaluatePoint(sample);
+							}
+
 							mask = noise_first_layer;
 						}
 					}
-					biome_sort += PWorldOwner->NoiseFilters[i].EvaluatePoint(sample);
+					
+					if (PWorldOwner->NoiseFilters[i].bUseDomainDistortion)
+					{
+						biome_sort = PWorldOwner->NoiseFilters[i].EvaluatePointDomainDistorted(sample);
+						//UE_LOG(LogTemp, Warning, TEXT("Evaluate point BIOME distored: %f"), biome_sort);
+					}
+					else
+					{
+						biome_sort += PWorldOwner->NoiseFilters[i].EvaluatePoint(sample);
+					}
+					
 					perlin_value += biome_sort * PWorldOwner->NoiseFilters[i].NoiseSetting.HeightMultiplier * mask;
 					
 				}
@@ -193,8 +222,11 @@ void AChunkGenerator::GenerateTerrainLayered()
 			Vertices[idx] = FVector((x * this->TerrainScale), (y * this->TerrainScale), perlin_value);
 			VerticeBiomeMap.Add(Vertices[idx] + SpawnLocation, SortBiome(biome_sort));
 			VertexColors[idx] = FLinearColor(0, 0, 0, perlin_value);
-			UV0[idx] = FVector2D(x * (TerrainScale * UVScale) / this->TerrainScale, 
-				y * (TerrainScale * UVScale) / this->TerrainScale);
+			UV0[idx] = FVector2D(x  / 2, 
+				y  / 2);
+
+			/*FVector2D(x * (TerrainScale * UVScale) / this->TerrainScale, 
+				y * (TerrainScale * UVScale) / this->TerrainScale);*/
 			idx++;
 
 		}

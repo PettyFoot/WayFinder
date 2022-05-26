@@ -66,7 +66,7 @@ void APTerrain::BeginPlay()
 	{
 		WaterBox->SetMaterial(0, WaterMaterial);
 	}
-	WaterBox->SetHiddenInGame(false);
+	WaterBox->SetHiddenInGame(true);
 	WaterBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
 	//this->TerrainWorldLocation = UKismetMathLibrary::TransformLocation(actor_trans, GetActorLocation());

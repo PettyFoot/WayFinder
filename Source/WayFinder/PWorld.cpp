@@ -257,7 +257,7 @@ void APWorld::GetWorldPlayers()
 			this->PlayersInGame.Add(player_char);
 			x_pos = player_char->GetActorLocation().X / ((this->PlainSize - 1) * this->TerrainScale);
 			y_pos  = player_char->GetActorLocation().Y / ((this->PlainSize - 1) * this->TerrainScale);
-			if (player_char->GetActorLocation().X < 0) { x_pos -= 1; }
+			if (player_char->GetActorLocation().X < 0) { x_pos -= 1; } //adjust - for better terrain generation experience
 			if (player_char->GetActorLocation().Y < 0) { y_pos -= 1; }
 
 			this->PlayersInGameLastLocation.Add(FVector2D(x_pos, y_pos));

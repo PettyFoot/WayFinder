@@ -178,6 +178,9 @@ struct FNoiseFilter
 	UPROPERTY(EditAnywhere, Category = "Noise Settings")
 	bool bUsePreviousLayerAsMask;
 
+	UPROPERTY(EditAnywhere, Category = "Noise Settings")
+	bool bUseDomainDistortion;
+
 	float EvaluatePoint(FVector2D grid_loc)
 	{
 
@@ -201,6 +204,13 @@ struct FNoiseFilter
 		noise_val = FMath::Pow(noise_val, NoiseSetting.PowerValue);
 		//UE_LOG(LogTemp, Warning, TEXT("perlin Noisefilter: %f"), noise_val * NoiseSetting.HeightMultiplier);
 		return noise_val;
+	}
+
+	float EvaluatePointDomainDistorted(FVector2D point)
+	{
+		FVector2D aa = FVector2D(EvaluatePoint(point + FVector2D(0.0, 0.0)), EvaluatePoint(point + FVector2D(5.2, 1.3)));
+
+		return EvaluatePoint(point + 90.f * aa);
 	}
 
 
