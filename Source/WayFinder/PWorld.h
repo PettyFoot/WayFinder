@@ -210,7 +210,10 @@ struct FNoiseFilter
 	{
 		FVector2D aa = FVector2D(EvaluatePoint(point + FVector2D(0.0, 0.0)), EvaluatePoint(point + FVector2D(5.2, 1.3)));
 
-		return EvaluatePoint(point + 90.f * aa);
+		FVector2D bb = FVector2D(EvaluatePoint(point + aa * 60.f + FVector2D(3.7, 7.5)),
+			EvaluatePoint(point + 60.f * aa + FVector2D(9.2, 2.8)));
+
+		return EvaluatePoint(point + 90.f * bb);
 	}
 
 
