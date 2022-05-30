@@ -96,6 +96,12 @@ public:
 
 	void EndGeneration();
 
+	void CalculateNormals();
+
+	FVector SurfaceNormalFromPoint(int point_a, int point_b, int point_c);
+
+	void AddTriangle(int vert_a, int vert_b, int vert_c);
+
 	bool bIsDone;
 
 	void ResetArrays();
@@ -104,6 +110,9 @@ public:
 
 	//void GenerateFoliageBasedOnBiome()
 
+private:
+
+	int TriangleIdx;
 
 private:
 

@@ -69,7 +69,7 @@ struct TerrainGenerationOrder {
 		Left[0] = FVector2D(1, -1);
 		Left[1] = FVector2D(1, 0);
 		Left[2] = FVector2D(1, 1);
-		Left[3] = FVector2D(0, 2);
+	
 
 		DownLeft.SetNum(5);
 		DownLeft[0] = FVector2D(1, 1);
@@ -94,7 +94,7 @@ struct TerrainGenerationOrder {
 		Right[0] = FVector2D(-1, 1);
 		Right[1] = FVector2D(-1, 0);
 		Right[2] = FVector2D(-1, -1);
-		Left[3] = FVector2D(0, 2);
+		
 
 		UpRight.SetNum(5);
 		UpRight[0] = FVector2D(1, -1);
@@ -183,10 +183,20 @@ struct FNoiseFilter
 
 	float EvaluatePoint(FVector2D grid_loc)
 	{
+		//float max_possible_height = 0.f;
 
 		float noise_val = 0;
 		float frequency = 1;
 		float amplitude = 1.f;
+		/*
+		for (int w = 0; w < NoiseSetting.Octaves; w++)
+		{
+			max_possible_height += amplitude;
+			amplitude *= NoiseSetting.Persistence;
+		}*/
+
+		//amplitude = 1.f;
+
 		for (int w = 0; w < NoiseSetting.Octaves; w++)
 		{
 			float x_samp = ((grid_loc.X + NoiseSetting.Seed) * frequency) / NoiseSetting.Scale; // NoiseSetting.Scale;
@@ -197,9 +207,12 @@ struct FNoiseFilter
 			val = FMath::PerlinNoise2D(FVector2D(x_samp, y_samp));
 			
 			noise_val += FMath::Clamp(val * amplitude, 0.f, 1.f); //(val + 1) * .5f * amplitude;
+			//max_possible_height += amplitude;
 			frequency *= NoiseSetting.Lacunarity;
 			amplitude *= NoiseSetting.Persistence;
  		}
+
+		//float normalized_noise_val = ((noise_val + 1) / 2.f) / (2.f * max_possible_height / 1.75f);
 		//Lowers base heigt (creates a floor of sorts)
 		noise_val = FMath::Pow(noise_val, NoiseSetting.PowerValue);
 		//UE_LOG(LogTemp, Warning, TEXT("perlin Noisefilter: %f"), noise_val * NoiseSetting.HeightMultiplier);
@@ -210,12 +223,11 @@ struct FNoiseFilter
 	{
 		FVector2D aa = FVector2D(EvaluatePoint(point + FVector2D(0.0, 0.0)), EvaluatePoint(point + FVector2D(5.2, 1.3)));
 
-		FVector2D bb = FVector2D(EvaluatePoint(point + aa * 60.f + FVector2D(3.7, 7.5)),
+		FVector2D bb = FVector2D(EvaluatePoint(point + aa * 120.f + FVector2D(3.7, 7.5)),
 			EvaluatePoint(point + 60.f * aa + FVector2D(9.2, 2.8)));
 
-		return EvaluatePoint(point + 90.f * bb);
+		return EvaluatePoint(point + 150.f * bb);
 	}
-
 
 };
 
@@ -240,6 +252,8 @@ class WAYFINDER_API APWorld : public AActor
 public:	
 	// Sets default values for this actor's properties
 	APWorld();
+
+	float GetTerrainScale() const { return this->TerrainScale; }
 
 protected:
 	// Called when the game starts or when spawned

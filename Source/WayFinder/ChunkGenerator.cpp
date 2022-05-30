@@ -76,6 +76,7 @@ void AChunkGenerator::GenerateTerrain()
 	//this->VerticeBiomeMap.Reserve(PlainSize * PlainSize);
 	this->UV0.SetNum(PlainSize * PlainSize);
 	this->VertexColors.SetNum(PlainSize * PlainSize);
+	this->Triangles.SetNum(((PlainSize -1) * (PlainSize - 1)) * 6);
 
 	if (PWorldOwner)
 	{
@@ -92,48 +93,20 @@ void AChunkGenerator::GenerateTerrain()
 	{
 		this->GenerateTerrainSingle();
 	}
-
-	int32 iterations = (PlainSize) * (PlainSize - 1);
-	Triangles.SetNum(iterations * 6);
-	int tris = 0;
-	for (int i = 0; i < iterations; i++)
-	{
-		if ((i + 1) % PlainSize != 0) {
-			Triangles[tris] = i;
-			Triangles[tris + 1] = i + PlainSize + 1;
-			Triangles[tris + 2] = i + PlainSize;
-			Triangles[tris + 3] = i;
-			Triangles[tris + 4] = i + 1;
-			Triangles[tris + 5] = i + PlainSize + 1;
-			tris += 6;
-			//Triangles.Add(i);
-			//Triangles.Add(i + PlainSize + 1);
-			//Triangles.Add(i + PlainSize);
-			//Triangles.Add(i);
-			//Triangles.Add(i + 1);
-			//Triangles.Add(i + PlainSize + 1);
-		}
-	}
 	
-	Normals.SetNum(this->Vertices.Num());
-	/*for (int i = 0; i < Vertices.Num(); i++)
-	{
-		FVector one = Vertices[i+1] - Vertices[i];
-		FVector two = Vertices[i + PlainSize] - Vertices[i];
-
-		FVector norm = UKismetMathLibrary::Cross_VectorVector(one, two);
-		norm.Normalize();
-		Normals.Add(norm);
-	}*/
-
-	Tangents.Add(FProcMeshTangent(0, 1, 0));
-	Tangents.Add(FProcMeshTangent(0, 1, 0));
-	Tangents.Add(FProcMeshTangent(0, 1, 0));
-
+	
 	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Vertices, Triangles, UV0, Normals, Tangents);
+	//for (int i = 0; i < Normals.Num(); i++)
+	//{
+		//UE_LOG(LogTemp, Warning, TEXT("normal uproccomp: %d = %f, %f, %f"), i, Normals[i].X, Normals[i].Y, Normals[i].Z)
+	//}
+	this->CalculateNormals();
+	//for (int i = 0; i < Normals.Num(); i++)
+	//{
+		//UE_LOG(LogTemp, Warning, TEXT("normal manual: %d = %f, %f, %f"), i, Normals[i].X, Normals[i].Y, Normals[i].Z)
+	//}
 
-
-	//GenerateFoliageSpawnLocations();
+	GenerateFoliageSpawnLocations();
 }
 
 void AChunkGenerator::GenerateTerrainLayered()
@@ -141,6 +114,9 @@ void AChunkGenerator::GenerateTerrainLayered()
 	int idx = 0;
 	float min = 0;
 	float max = 1;
+	float topLeftX = (PlainSize - 1) / -2.f;
+	float topLeftY = (PlainSize - 1) / 2.f;
+
 
 	for (int x = 0; x < PlainSize; x++)
 	{
@@ -178,6 +154,7 @@ void AChunkGenerator::GenerateTerrainLayered()
 			{
 				sample = FVector2D(sampleX, sampleY);
 				float mask = 1.f;
+				//check if noise filter is enabled (don't add to height if not)
 				if (PWorldOwner->NoiseFilters[i].bIsEnabled)
 				{
 					
@@ -185,7 +162,7 @@ void AChunkGenerator::GenerateTerrainLayered()
 					{
 						if (i - 1 > -1)
 						{
-							if (PWorldOwner->NoiseFilters[i].bUseDomainDistortion)
+							if (PWorldOwner->NoiseFilters[i].bUseDomainDistortion) //Check should use domain warp
 							{
 								noise_first_layer = PWorldOwner->NoiseFilters[i - 1].EvaluatePointDomainDistorted(sample);
 								//UE_LOG(LogTemp, Warning, TEXT("Evaluate point distored: %f"), noise_first_layer);
@@ -199,7 +176,7 @@ void AChunkGenerator::GenerateTerrainLayered()
 						}
 					}
 					
-					if (PWorldOwner->NoiseFilters[i].bUseDomainDistortion)
+					if (PWorldOwner->NoiseFilters[i].bUseDomainDistortion) //Check should use domain warp
 					{
 						biome_sort = PWorldOwner->NoiseFilters[i].EvaluatePointDomainDistorted(sample);
 						//UE_LOG(LogTemp, Warning, TEXT("Evaluate point BIOME distored: %f"), biome_sort);
@@ -208,22 +185,25 @@ void AChunkGenerator::GenerateTerrainLayered()
 					{
 						biome_sort += PWorldOwner->NoiseFilters[i].EvaluatePoint(sample);
 					}
-					
-					perlin_value += biome_sort * PWorldOwner->NoiseFilters[i].NoiseSetting.HeightMultiplier * mask;
+					// total up height value
+					perlin_value += biome_sort * (PWorldOwner->NoiseFilters[i].NoiseSetting.HeightMultiplier * PWorldOwner->GetTerrainScale()) 
+					* mask;
 					
 				}
 			}
-		
-			
 
-			
 			//UE_LOG(LogTemp, Warning, TEXT("BIOMEEEEEE: % f"), biome_sort);
 
-			Vertices[idx] = FVector((x * this->TerrainScale), (y * this->TerrainScale), perlin_value);
-			VerticeBiomeMap.Add(Vertices[idx] + SpawnLocation, SortBiome(biome_sort));
-			VertexColors[idx] = FLinearColor(0, 0, 0, perlin_value);
-			UV0[idx] = FVector2D(x  / 2, 
-				y  / 2);
+			Vertices[idx] = FVector(x * this->TerrainScale, y * this->TerrainScale, perlin_value);
+			VerticeBiomeMap.Add(Vertices[idx] + SpawnLocation, SortBiome(biome_sort)); //sort raw perlin sample output
+			VertexColors[idx] = FLinearColor(0.f, 0.f, 0.f, perlin_value);
+			UV0[idx] = FVector2D((x * this->TerrainScale) / (float)PlainSize, (y * this->TerrainScale) / (float)PlainSize);
+
+			if (x < PlainSize - 1 && y < PlainSize - 1)
+			{
+				AddTriangle(idx, idx + PlainSize + 1, idx + PlainSize);
+				AddTriangle(idx + PlainSize + 1, idx, idx + 1);
+			}
 
 			/*FVector2D(x * (TerrainScale * UVScale) / this->TerrainScale, 
 				y * (TerrainScale * UVScale) / this->TerrainScale);*/
@@ -413,6 +393,7 @@ void AChunkGenerator::ResetArrays()
 	MountainFoliageSpawnVertices.Empty();
 
 	this->VerticeBiomeMap.Empty();
+	TriangleIdx = 0;
 }
 
 EBiome AChunkGenerator::SortBiome(float in_val)
@@ -446,6 +427,50 @@ EBiome AChunkGenerator::SortBiome(float in_val)
 	
 }
 
+void AChunkGenerator::CalculateNormals()
+{
+	this->Normals.Empty();
+	this->Normals.SetNum(this->Vertices.Num());
+
+	UE_LOG(LogTemp, Warning, TEXT("vertice coount: %d"), Vertices.Num());
+	int tri_count = this->Triangles.Num() / 3;
+	UE_LOG(LogTemp, Warning, TEXT("tri count: %d"), tri_count);
+
+	for (int i = 0; i < tri_count; i++)
+	{
+		int norm_tri_idx = i * 3;
+		int vert_idx_a = this->Triangles[norm_tri_idx];
+		int vert_idx_b = this->Triangles[norm_tri_idx + 1];
+		int vert_idx_c = this->Triangles[norm_tri_idx + 2];
+
+		FVector tri_norm = SurfaceNormalFromPoint(vert_idx_a, vert_idx_b, vert_idx_c);
+		Normals[vert_idx_a] = tri_norm;
+		Normals[vert_idx_b] = tri_norm;
+		Normals[vert_idx_c] = tri_norm;
+	}
+	
+	for (int i = 0; i < Normals.Num(); i++)
+	{
+		Normals[i].Normalize();
+	}
+
+}
+
+FVector AChunkGenerator::SurfaceNormalFromPoint(int point_a, int point_b, int point_c)
+{
+	FVector pointA = Vertices[point_a];
+	FVector pointB = Vertices[point_b];
+	FVector pointC = Vertices[point_c];
+
+	const FVector sideAB = pointC - pointA ;
+	const FVector sideAC = pointB - pointA ;
+	FVector norm = (sideAB ^ sideAC).GetSafeNormal();
+	//UE_LOG(LogTemp, Warning, TEXT("normal manual _ pre normalize: %f, %f, %f"), norm.X, norm.Y, norm.Z)
+	//norm.Normalize();
+	//UE_LOG(LogTemp, Error, TEXT("normal manual _ normalized: %f, %f, %f"), norm.X, norm.Y, norm.Z)
+	return norm;
+}
+
 void AChunkGenerator::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
@@ -459,6 +484,15 @@ void AChunkGenerator::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		CurrentRunningThread->WaitForCompletion();
 		delete GenerateThread;
 	}
+}
+
+void AChunkGenerator::AddTriangle(int vert_a, int vert_b, int vert_c)
+{
+	this->Triangles[TriangleIdx] = vert_a;
+	this->Triangles[TriangleIdx + 1] = vert_b;
+	this->Triangles[TriangleIdx + 2] = vert_c;
+	TriangleIdx += 3;
+
 }
 
 
@@ -486,3 +520,36 @@ void AChunkGenerator::SetGeneratorLocation(FVector spawn_location)
 }
 
 
+
+////////////////Old Stuff
+/*/*int32 iterations = (PlainSize) * (PlainSize - 1);
+	//Triangles.SetNum(iterations * 6);
+	int tris = 0;
+	for (int i = 0; i < iterations; i++)
+	{
+		if ((i + 1) % PlainSize != 0) {
+			/*Triangles[tris] = i;
+			Triangles[tris + 1] = i + PlainSize + 1;
+			Triangles[tris + 2] = i + PlainSize;
+			Triangles[tris + 3] = i;
+			Triangles[tris + 4] = i + 1;
+			Triangles[tris + 5] = i + PlainSize + 1;
+			tris += 6;
+	Triangles.Add(i);
+	Triangles.Add(i + PlainSize + 1);
+	Triangles.Add(i + PlainSize);
+	Triangles.Add(i + PlainSize + 1);
+	Triangles.Add(i);
+	Triangles.Add(i + 1);
+
+}
+	}*/
+	/*for (int i = 0; i < Vertices.Num(); i++)
+	{
+		FVector one = Vertices[i+1] - Vertices[i];
+		FVector two = Vertices[i + PlainSize] - Vertices[i];
+
+		FVector norm = UKismetMathLibrary::Cross_VectorVector(one, two);
+		norm.Normalize();
+		Normals.Add(norm);
+	}*/

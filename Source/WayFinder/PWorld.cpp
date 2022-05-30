@@ -362,9 +362,6 @@ void APWorld::Generating(TArray<FVector2D> generation_order, int player_idx)
 {
 	if (!this->bIsGenerating)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("Began Generation"));
-		this->ChunkGenerator->rand_num = FMath::RandRange(0, 1);
-		
 		
 		bool bShouldThread = true; //Set thread enabled (default)
 		//Find terrain to be generated world location (grid location + generation order grid location * plainsize * terrain scale)
@@ -437,17 +434,17 @@ void APWorld::Generating(TArray<FVector2D> generation_order, int player_idx)
 			//UE_LOG(LogTemp, Warning, TEXT("Size: %d"), Vertices.Num());
 			//UE_LOG(LogTemp, Warning, TEXT("Size: %d"), Triangles.Num());
 			//UE_LOG(LogTemp, Warning, TEXT("Size: %d"), Normals.Num());
+			this->GeneratedTerrainChunks.Add(generated_actor);
+			this->GenerationCurrent++;
 
 		}
-		this->GeneratedTerrainChunks.Add(generated_actor); 
-		this->GenerationCurrent++;
+		
 		this->bIsGenerating = false; //disable is generating to allow for more terrain chunk generation
 		//UE_LOG(LogTemp, Warning, TEXT("Generated One piece of terrain"));
 	}
 
-
 	//end of generation cycle
-	if (GenerationCurrent >= generation_order.Num() * this->GenerateDistance)
+	if (GenerationCurrent >= generation_order.Num())
 	{
 		//reset all flags and counters
 		bIsGenerating = false; 

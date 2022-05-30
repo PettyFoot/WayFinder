@@ -329,7 +329,7 @@ void APTerrain::GenerateFoliageSpawns(TArray<FVector> water_foliage_spawn_locati
 	this->MountainFoliageSpawnVertices = mountain_foliage_spawn_locations;
 
 	int total = WaterFoliageSpawnVertices.Num() + MeadowFoliageSpawnVertices.Num() + ForestFoliageSpawnVertices.Num() + FootHillFoliageSpawnVertices.Num() + MountainFoliageSpawnVertices.Num();
-	UE_LOG(LogTemp, Warning, TEXT("total foliage %d"), total);
+	//UE_LOG(LogTemp, Warning, TEXT("total foliage %d"), total);
 	this->GenerateFoliage(this->WaterFoliageSpawnVertices, PWorld->WaterFoliageSpawn);
 	this->WaterFoliageSpawnVertices.Empty();
 	this->GenerateFoliage(this->MeadowFoliageSpawnVertices, PWorld->MeadowFoliageSpawn);
