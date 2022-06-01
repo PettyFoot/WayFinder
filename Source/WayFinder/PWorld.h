@@ -204,8 +204,8 @@ struct FNoiseFilter
 			//UE_LOG(LogTemp, Warning, TEXT("perlin Noisefilter X: %f"), x_samp);
 			//UE_LOG(LogTemp, Warning, TEXT("perlin Noisefilter Y: %f"), y_samp);
 			float val = 0.f;
-			val = FMath::PerlinNoise2D(FVector2D(x_samp, y_samp));
-			
+			val = FMath::PerlinNoise2D(FVector2D(y_samp, x_samp));
+			//UE_LOG(LogTemp, Warning, TEXT("perlin noise: %f"), val);
 			noise_val += FMath::Clamp(val * amplitude, 0.f, 1.f); //(val + 1) * .5f * amplitude;
 			//max_possible_height += amplitude;
 			frequency *= NoiseSetting.Lacunarity;

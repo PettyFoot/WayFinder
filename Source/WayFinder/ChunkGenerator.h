@@ -11,6 +11,139 @@
 class AGenerateThread;
 class APWorld;
 
+struct Array
+{
+	//
+	TArray<int32> Columns;
+	int32 ColumnIdx = 0;
+
+	Array() {}
+	Array(int size) { if (size > 0) { Columns.SetNum(size); ColumnIdx = size - 1; } }
+
+};
+
+struct TArrayTwo
+{
+	//Array of Array structs
+	TArray<Array> Rows;
+	int32 RowIdx = 0;
+
+	int GetElement(int row_idx, int col_idx)
+	{
+		if (row_idx >= 0 && row_idx <= RowIdx)
+		{
+			if (col_idx >= 0 && col_idx <= Rows[row_idx].ColumnIdx)
+			{
+				return Rows[row_idx].Columns[col_idx];
+			}
+		}
+		
+		return -10000000; //something large that I know would never be a value returned by and indice
+		
+	}
+
+	//@param int - num rows to hold
+	//@param bool - if true set columns to same size as rows
+	void SetRows(int rows, bool bIsSquare)
+	{
+		//keep size to 1 and up
+		if (rows > 0)
+		{
+			this->Rows.SetNum(rows);
+			this->RowIdx = rows -1; //(0 based mf)
+			
+			if (bIsSquare) //Check should make column same size
+			{
+				for (auto& row : Rows)
+				{
+					row.Columns.SetNum(rows);
+					row.ColumnIdx = rows - 1; //(0 based mf)
+				}
+			}
+		}
+	}
+
+	//@param int - value to add to 2d array
+	void AddElement(int val, int row_idx = -1, int col_idx = -1)
+	{
+		if (row_idx > -1 && col_idx > -1)
+		{
+			if (row_idx < this->Rows.Num())
+			{
+				if (col_idx < this->Rows[row_idx].Columns.Num())
+				{
+					this->Rows[row_idx].Columns[col_idx] = val;
+				}
+			}
+		}
+		else
+		{
+			if (Rows.Num() > 0)
+			{
+				this->Rows.Add(Array(Rows[0]));
+			}
+			else
+			{
+				this->Rows.Add(Array());
+			}
+
+			this->RowIdx++; //Increment 
+			this->Rows[RowIdx].Columns.Add(val); //Get new column and add val to it
+			this->Rows[RowIdx].ColumnIdx++;
+			//Could add a default thing to do when adding new item without idx (i.e init the array to num 5)
+
+			UE_LOG(LogTemp, Warning, TEXT("CHUNKGENERATOR::(struct)TArrayTwo::AddElement__ Added element to next avail idx Row: %d, Col: %d"), 
+				RowIdx +1, Rows[row_idx].ColumnIdx + 1);
+		}
+
+	}
+
+	//This doesn't delete the arrays but just clears them and resets row & column idxs
+	void Empty()
+	{
+
+		if (Rows.Num() > 0) //check if data to remove
+		{
+			for (auto& row : Rows) 
+			{
+				if (row.Columns.Num() > 0) //check if data to remove
+				{
+					row.Columns.Empty(); //Clear cols
+					row.ColumnIdx = 0;
+				}
+				
+			}
+			Rows.Empty(); //Clear rows
+			this->RowIdx = 0;
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("CHUNKGENERATOR::(struct)TArrayTwo::Empty__ no data to remove"));
+		}
+	}
+
+	void PrintData()
+	{
+		int row_it = 0;
+		int col_it = 0;
+		
+			for (auto& row : Rows)
+			{
+
+				for(auto& column: row.Columns)
+				{
+
+					UE_LOG(LogTemp, Warning, TEXT("( %d , %d ) = %d"), row_it, col_it, column);
+					col_it++;
+				}
+				row_it++;
+				col_it = 0;
+			}
+			
+	}
+
+};
+
 
 
 UCLASS()

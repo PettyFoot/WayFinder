@@ -100,13 +100,13 @@ void AChunkGenerator::GenerateTerrain()
 	//{
 		//UE_LOG(LogTemp, Warning, TEXT("normal uproccomp: %d = %f, %f, %f"), i, Normals[i].X, Normals[i].Y, Normals[i].Z)
 	//}
-	this->CalculateNormals();
+	//this->CalculateNormals();
 	//for (int i = 0; i < Normals.Num(); i++)
 	//{
 		//UE_LOG(LogTemp, Warning, TEXT("normal manual: %d = %f, %f, %f"), i, Normals[i].X, Normals[i].Y, Normals[i].Z)
 	//}
-
-	GenerateFoliageSpawnLocations();
+	// 
+	//GenerateFoliageSpawnLocations();
 }
 
 void AChunkGenerator::GenerateTerrainLayered()
@@ -114,9 +114,40 @@ void AChunkGenerator::GenerateTerrainLayered()
 	int idx = 0;
 	float min = 0;
 	float max = 1;
-	float topLeftX = (PlainSize - 1) / -2.f;
-	float topLeftY = (PlainSize - 1) / 2.f;
+	float topLeftX = (PlainSize - 1) * (this->TerrainScale) / -2.f;
+	float topLeftY = (PlainSize - 1) * (this->TerrainScale) / 2.f;
+	int MeshSize = PlainSize - 2;
 
+	TArrayTwo IndiceVertex;
+	IndiceVertex.SetRows(PlainSize, true); //Set 2d array: rows x columns (Plainsize x Plainsize)
+	int border_idx(-1), mesh_idx(0);
+
+	for (int x = 0; x < PlainSize; x++)
+	{
+		for (int y = 0; y < PlainSize; y++)
+		{
+
+			bool bIsBorder = false;
+			if (y == 0 || y == PlainSize - 1 || x == 0 || x == PlainSize - 1)
+			{
+				bIsBorder = true;
+			}
+
+			if (bIsBorder)
+			{
+				IndiceVertex.AddElement(border_idx, x, y);
+				border_idx--;
+			}
+			else
+			{
+				IndiceVertex.AddElement(mesh_idx, x, y);
+				mesh_idx++;
+			}
+
+		}
+	}
+
+	IndiceVertex.PrintData();
 
 	for (int x = 0; x < PlainSize; x++)
 	{
@@ -194,13 +225,24 @@ void AChunkGenerator::GenerateTerrainLayered()
 
 			//UE_LOG(LogTemp, Warning, TEXT("BIOMEEEEEE: % f"), biome_sort);
 
-			Vertices[idx] = FVector(x * this->TerrainScale, y * this->TerrainScale, perlin_value);
+			Vertices[idx] = FVector((x*this->TerrainScale) + topLeftX, (y * this->TerrainScale) + topLeftX, perlin_value);
 			VerticeBiomeMap.Add(Vertices[idx] + SpawnLocation, SortBiome(biome_sort)); //sort raw perlin sample output
 			VertexColors[idx] = FLinearColor(0.f, 0.f, 0.f, perlin_value);
-			UV0[idx] = FVector2D((x * this->TerrainScale) / (float)PlainSize, (y * this->TerrainScale) / (float)PlainSize);
+			UV0[idx] = FVector2D((y) / (float)PlainSize, (x) / (float)PlainSize);
+			UE_LOG(LogTemp, Warning, TEXT("UV -- X: %f, Y: %f"), UV0[idx].X, UV0[idx].Y);
+
+		
 
 			if (x < PlainSize - 1 && y < PlainSize - 1)
 			{
+				int a = IndiceVertex.GetElement(x, y);
+				int b = IndiceVertex.GetElement(x, y + 1);
+				int c = IndiceVertex.GetElement(x + 1, y);
+				int d = IndiceVertex.GetElement(x + 1, y + 1);
+				UE_LOG(LogTemp, Warning, TEXT("tri_vert A: %d"), a);
+				UE_LOG(LogTemp, Warning, TEXT("tri_vert B: %d"), b);
+				UE_LOG(LogTemp, Warning, TEXT("tri_vert C: %d"), c);
+				UE_LOG(LogTemp, Warning, TEXT("tri_vert D: %d"), d);
 				AddTriangle(idx, idx + PlainSize + 1, idx + PlainSize);
 				AddTriangle(idx + PlainSize + 1, idx, idx + 1);
 			}
